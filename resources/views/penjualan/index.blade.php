@@ -44,7 +44,6 @@
       mtype: "GET",
       // styleUI: 'Bootstrap4',
       iconSet: 'fontAwesome',
-      height: 100,
       shrinkToFit: true,
       autowidth: true,
       url: "penjualan/" + id + "/detail",
@@ -52,7 +51,7 @@
       colNames: ['Nama Barang', 'Banyak Barang', 'Harga Satuan (Rp)', 'Total (Rp)'],
       colModel: [
         // { name: 'num', index: 'num', width: 55 },
-        { name: 'nama_barang', index: 'nama_barang', width: 180 },
+        { name: 'nama_barang', index: 'nama_barang', width: 120 },
         { name: 'qty', index: 'qty', width: 120, align: "right" },
         { name: 'harga', index: 'harga', width: 120, align: "right", formatter: 'currency', formatoptions: formatOpt },
         {
@@ -72,7 +71,7 @@
       sortname: 'penjualan_id',
       viewrecords: true,
       gridview: true,
-      width: 600,
+      // width: 600,
       height: 'auto',
       sortorder: "asc",
       multiselect: false,
@@ -101,11 +100,40 @@
         });
 
         $("#detailItem").jqGrid('footerData', 'set', { nama_barang: 'Total:', total: totalHarga, qty: totalBarang });
+
+        // Highlight pencarian
+        higligthPencarian($(this));
       }
     }).navGrid('#detailItemPager', { add: false, edit: false, del: false, search: false, refresh: false });
 
+    // Filter Bar untuk detail 
+    // Filter Bar => Untuk mencari data
+    $('#detailItem').jqGrid('filterToolbar', {
+      autosearch: true,
+      stringResult: true,
+      searchOnEnter: false,
+      defaultSearch: "cn",
+      multipleSearch: true,
+      beforeSearch: function () {
+        const postData = $('#detailItem').getGridParam("postData");
+        delete postData.global_search;
+
+        $('#detailItem').setGridParam({
+          search: true,
+          page: 1,
+          postData: {
+            _search: true,
+          }
+        }).trigger('reloadGrid');
+
+      }
+
+    });
+
   }
-    
+  
+  // MASTER GRID
+  // Inisialisasi jqGrid untuk master
   $('#jqGrid').jqGrid({
     url: "/penjualan/master",
     mtype: "GET",
@@ -118,17 +146,17 @@
         name: 'id_penjualan',
         hidden: true,
         key: true,
-        width: 75
+        width: 30
       },
       {
         label: 'No Bukti',
         name: 'no_bukti',
-        width: 150
+        width: 100
       },
       {
         label: 'Tanggal Bukti',
         name: 'tgl_bukti',
-        width: 150,
+        width: 100,
         // searchoptions: { 
         //   dataInit: function (el) { 
         //     $(el).datepicker({ dateFormat: 'dd-mm-yy' }); 
@@ -140,7 +168,7 @@
       {
         label: 'Nama Pelanggan',
         name: 'nama_pelanggan',
-        width: 150
+        width: 100
       }
     ],
     cmTemplate: { required: true },

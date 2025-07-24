@@ -51,6 +51,42 @@ class PenjualanDetail extends Model
         $limit = $params['limit'] ?? 10;
         $page = $params['page'] ?? 1;
 
+        // Filter berdasarkan penjualan_id
+        // --- Pencarian ---
+        // $globalSearch = $params['global_search'] ?? '';
+        $search = $params['_search'] ?? 'false';
+
+        // if ($globalSearch) {
+        //     $baseQuery->where(function ($q) use ($globalSearch) {
+        //         $q->where('nama_barang', 'like', "%{$globalSearch}%")
+        //             ->orWhere('qty', 'like', "%{$globalSearch}%")
+        //             ->orWhere('harga', 'like', "%{$globalSearch}%");
+        //     });
+        // }
+
+        if ($search == 'true') {
+            $filters = $params['filters'] ?? [];
+            // Asumsi $filters adalah array PHP, bukan JSON string
+            if (!empty($filters)) {
+                $baseQuery->where(function ($q) use ($filters) {
+                    foreach ($filters as $filter) {
+                        $field = $filter['field'] ?? null;
+                        $data = $filter['data'] ?? null;
+
+                        if ($field && $data !== null) {
+                            // if ($field == 'tgl_bukti') {
+                            //     // Untuk pencarian tgl_bukti, kita bisa gunakan format yang sesuai
+                            //     $q->whereRaw("DATE_FORMAT(penjualans.tgl_bukti, '%d-%m-%Y') LIKE ?", ["%$data%"]);
+                            //     continue; // Skip ke iterasi berikutnya karena sudah di-handle
+                            // }
+                            // Tambahkan kondisi pencarian lain jika perlu
+                            $q->where($field, 'like', "%{$data}%");
+                        }
+                    }
+                });
+            }
+        }
+
         $baseQuery->where('penjualan_id', $params['penjualan_id'])->count();
 
         // Clone query untuk menghitung total
