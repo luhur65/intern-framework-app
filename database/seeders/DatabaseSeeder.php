@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
         // Each Penjualan will have a random number of details between 2 and 10
         $penjualans->each(function ($penjualan) { 
             PenjualanDetail::factory(rand(2, 10))->create([
-                'penjualan_id' => $penjualan->id_penjualan,
+                'penjualan_id' => $penjualan->id,
             ]);
         });
 

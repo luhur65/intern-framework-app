@@ -134,8 +134,8 @@
         //     $(el).datepicker({ dateFormat: 'dd-mm-yy' }); 
         //   } 
         // }
-        formatter: 'date',
-        formatoptions: { srcformat: 'Y-m-d', newformat: 'd-m-Y' } // format tanggal untuk backend yang menggunakan ISO date
+        // formatter: 'date',
+        // formatoptions: { srcformat: 'Y-m-d', newformat: 'd-m-Y' } // format tanggal untuk backend yang menggunakan ISO date
       },
       {
         label: 'Nama Pelanggan',
@@ -172,11 +172,15 @@
         // $("#jqGrid").jqGrid('setSelection', selectId);
         // console.log(selectId);
         detailTable(selectId);
+        console.log(selectId)
 
       } else {
         selectRow(ids[0]);
         detailTable(ids[0]);
+        console.log(ids[0]);
+
       }
+
 
       // Highlight pencarian
       higligthPencarian($(this));

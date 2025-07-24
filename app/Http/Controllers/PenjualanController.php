@@ -60,8 +60,7 @@ class PenjualanController extends Controller
      */
     public function master()
     {
-        $params = $this->gridParams;
-        $masterData = Penjualan::query()->gridMaster($params);
+        $masterData = Penjualan::getGridMaster($this->gridParams);
         return response()->json($masterData);
     }
 

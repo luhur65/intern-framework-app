@@ -35,7 +35,7 @@ class PenjualanDetailController extends Controller
     {
         $params = $this->gridParams;
         $params['penjualan_id'] = $penjualanId;
-        $data = PenjualanDetail::query()->gridDetail($params);
+        $data = PenjualanDetail::getGridDetail($params);
         return \response()->json($data);
 
         // return "hello";

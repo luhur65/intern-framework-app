@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\DB; // Import DB facade untuk Query Builder
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,7 +12,7 @@ class PenjualanDetail extends Model
     use HasFactory;
 
     protected $fillable = ['penjualan_id', 'nama_barang', 'qty', 'harga'];
-    protected $primaryKey = 'id_detail';
+    // protected $primaryKey = 'id_detail';
     public $timestamps = false;
 
     public function penjualan()
@@ -25,20 +26,36 @@ class PenjualanDetail extends Model
     }
     
     /**
-     * Scope a query to get grid data.
+     * Static a query to get grid data.
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param array $params
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeGridDetail($query, array $params)
+    public static function getGridDetail(array $params)
     {
+        // Buat query dasar dengan Query Builder
+        $baseQuery = DB::table('penjualan_details')
+            ->select(
+                'penjualan_details.id',
+                'penjualan_details.nama_barang',
+                'penjualan_details.qty',
+                'penjualan_details.harga',
+                'penjualan_details.penjualan_id',
+                DB::raw('penjualan_details.qty * penjualan_details.harga as total')
+            );
+            
+        // Pagination
         $sidx = $params['sidx'] ?? 'id_detail';
         $sord = $params['sord'] ?? 'asc';
         $limit = $params['limit'] ?? 10;
         $page = $params['page'] ?? 1;
 
-        $count = $query->where('penjualan_id', $params['penjualan_id'])->count();
+        $baseQuery->where('penjualan_id', $params['penjualan_id'])->count();
+
+        // Clone query untuk menghitung total
+        $countQuery = clone $baseQuery;
+        $count = $countQuery->count();
 
         if ($count > 0) {
             $total_pages = ceil($count / $limit);
@@ -54,27 +71,29 @@ class PenjualanDetail extends Model
 
         if ($start < 0) $start = 0;
 
-        $data = $query->where('penjualan_id', $params['penjualan_id'])
-                     ->orderBy($sidx, $sord)
+        $data = $baseQuery->orderBy($sidx, $sord)
                      ->offset($start)
                      ->limit($limit);
+
+        // format data untuk grid (misalnya jqGrid)
+        $rows = $data->get()->map(function ($detail) {
+            return [
+                'id' => $detail->id,
+                'cell' => [
+                    // $detail->id_detail,
+                    $detail->nama_barang,
+                    $detail->qty,
+                    $detail->harga, 
+                    $detail->total, // Total dihitung dari qty * harga
+                ],
+            ];
+        });
 
         return [
                 'page' => $page,
                 'total' => $total_pages,
                 'records' => $count,
-                'rows' => $data->get()->map(function ($detail) {
-                    return [
-                        'id' => $detail->id_detail,
-                        'cell' => [
-                            // $detail->id_detail,
-                            $detail->nama_barang,
-                            $detail->qty,
-                            $detail->harga,
-                            $detail->getTotalAttribute(), // total = qty * harga 
-                        ],
-                    ];
-                })->toArray(),
+                'rows' => $rows->toArray(),
             ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\DB; // Import DB facade untuk Query Builder
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -13,7 +14,7 @@ class Penjualan extends Model
 
     // protected $table = 'penjualans';
     protected $fillable = ['no_bukti', 'tgl_bukti', 'pelanggan_id'];
-    protected $primaryKey = 'id_penjualan';
+    // protected $primaryKey = 'id_penjualan';
     public $timestamps = false;
 
     public function pelanggan()
@@ -39,104 +40,121 @@ class Penjualan extends Model
     }
 
     /**
-     * Scope a query to get grid data.
+     * Scope a query to get grid data - versi Query Builder.
+     * Tetap mengembalikan data paginasi seperti versi Eloquent.
+     * Ini bukan chunking, ini tetap paginasi.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param \Illuminate\Database\Query\Builder $query (sebenarnya tidak digunakan karena kita bikin query baru)
      * @param array $params
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @return array
      */
-    public function scopeGridMaster($countQuery, array $params)
+    public static function getGridMaster(array $params) 
     {
-        $sidx = $params['sidx'] ?? 'id_penjualan';
-        $sord = $params['sord'] ?? 'asc';
-        $limit = $params['limit'] ?? 10;
-        $page = $params['page'] ?? 1;
+        // Buat query dasar dengan Query Builder
+        $baseQuery = DB::table('penjualans')
+            ->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id')
+            ->select(
+                'penjualans.id',
+                'penjualans.no_bukti',
+                'penjualans.tgl_bukti',
+                'pelanggans.nama_pelanggan'
+                // Total akan dihitung terpisah
+            );
 
-        // pencarian
+
+        // --- Pencarian ---
         $globalSearch = $params['global_search'] ?? '';
         $search = $params['_search'] ?? 'false';
 
-        // $query->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id');
-
-        $countQuery = Penjualan::query();
-
-        // Terapkan filter saja, tanpa limit & offset
-        $countQuery = $countQuery->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id');
-        // \dd($query->get());
-
         if ($globalSearch) {
-            $countQuery->where(function ($q) use ($globalSearch) {
-                $q->where('no_bukti', 'like', "%{$globalSearch}%")
-                  ->orWhere('tgl_bukti', 'like', "%{$globalSearch}%")
-                  ->orWhere('nama_pelanggan', 'like', "%{$globalSearch}%");
+            $baseQuery->where(function ($q) use ($globalSearch) {
+                $q->where('penjualans.no_bukti', 'like', "%{$globalSearch}%")
+                    ->orWhere('penjualans.tgl_bukti', 'like', "%{$globalSearch}%")
+                    ->orWhere('pelanggans.nama_pelanggan', 'like', "%{$globalSearch}%");
             });
         }
 
-        // dd($globalSearch);
         if ($search == 'true') {
-            // \dd($params);
             $filters = $params['filters'] ?? [];
-            // $filters = \json_decode($filters, true);
-            $countQuery->where(function ($q) use ($filters) {
-                foreach ($filters as $filter) {
-                    $field = $filter['field'];
-                    $search = $filter['data'];
-                    
-                    if ($field == 'tgl_bukti') {
-                        $q->whereRaw("DATE_FORMAT(tgl_bukti, '%d-%m-%Y') LIKE ?", ["%$search%"]);
-                    } else {
-                        $q->where($field, 'like', "%{$search}%");
+            // Asumsi $filters adalah array PHP, bukan JSON string
+            if (!empty($filters)) {
+                $baseQuery->where(function ($q) use ($filters) {
+                    foreach ($filters as $filter) {
+                        $field = $filter['field'] ?? null;
+                        $data = $filter['data'] ?? null;
+
+                        if ($field && $data !== null) {
+                            if ($field == 'tgl_bukti') {
+                                // Untuk pencarian tgl_bukti, kita bisa gunakan format yang sesuai
+                                $q->whereRaw("DATE_FORMAT(penjualans.tgl_bukti, '%d-%m-%Y') LIKE ?", ["%$data%"]);
+                                continue; // Skip ke iterasi berikutnya karena sudah di-handle
+                            }
+                            // Tambahkan kondisi pencarian lain jika perlu
+                            $q->where($field, 'like', "%{$data}%");
+                        }
                     }
-                }
-            });
+                });
+            }
         }
 
-        // $start = $limit * $page - $limit;
-        $start = $params['start'] ?? 0;
+        // --- Pagination ---
+        $sidx = $params['sidx'] ?? 'penjualans.id'; // Default sort
 
-        // return $query->with('pelanggan') // tidak bisa melakukan sorting dengan relasi
-        //     ->orderBy($sidx, $sord)
-        //     ->offset($start)
-        //     ->limit($limit);
+        $sord = $params['sord'] ?? 'asc';
+        $limit = (int)($params['limit'] ?? 10);
+        $page = (int)($params['page'] ?? 1);
+        $start = $params['start'] ?? (($page - 1) * $limit);
 
-        $data = $countQuery->select('penjualans.*', 'pelanggans.nama_pelanggan')
-            ->orderBy($sidx, $sord)
+        // Clone query untuk menghitung total
+        $countQuery = clone $baseQuery;
+        $count = $countQuery->count();
+
+        $total_pages = $count > 0 ? ceil($count / $limit) : 0;
+        if ($page > $total_pages) $page = $total_pages;
+        $start = max(0, ($page - 1) * $limit); // Recalculate start
+
+        // Dapatkan data dengan limit dan offset
+        $data = $baseQuery->orderBy($sidx, $sord)
             ->offset($start)
             ->limit($limit)
             ->get();
-        
-        $count = $countQuery->count();
 
-        if ($count > 0) {
-            $total_pages = ceil($count / $limit);
-        } else {
-            $total_pages = 0;
-        }
+        // --- Hitung Total untuk setiap Penjualan ---
+        // Karena kita tidak pakai Eloquent, kita harus hitung manual
+        $data->transform(function ($item) {
+            // Query untuk mendapatkan detail dan hitung total
+            // $details = DB::table('penjualan_details')
+            //     ->where('penjualan_id', $item->id)
+            //     ->get();
 
-        if ($page > $total_pages) {
-            $page = $total_pages;
-        }
+            // $total = $details->sum(function ($detail) {
+            //     return $detail->qty * $detail->harga;
+            // });
 
-        $start = $limit * $page - $limit;
+            // $item->total = $total;
+            // Format tanggal jika perlu
+            $item->formatted_tgl_bukti = \Carbon\Carbon::parse($item->tgl_bukti)->format('d-m-Y');
+            return $item;
+        });
 
-        if ($start < 0) $start = 0;
+        // Format data untuk grid (misalnya jqGrid)
+        $rows = $data->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'cell' => [
+                    $item->id,
+                    $item->no_bukti,
+                    $item->formatted_tgl_bukti, // Gunakan tanggal yang diformat
+                    $item->nama_pelanggan,
+                ],
+            ];
+        });
 
         return [
             'page' => $page,
             'total' => $total_pages,
             'records' => $count,
-            'rows' => $data->map(function ($item) {
-                return [
-                    'id' => $item->id_penjualan,
-                    'cell' => [
-                        $item->id_penjualan,
-                        $item->no_bukti,
-                        $item->tgl_bukti,
-                        $item->pelanggan->nama_pelanggan ?? '',
-                        $item->total,
-                    ],
-                ];
-            }),
+            'rows' => $rows->toArray(), // Konversi ke array
         ];
     }
 }
