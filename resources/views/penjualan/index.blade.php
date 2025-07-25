@@ -80,59 +80,127 @@
   <script>
 
   const selectId = null;
+  const detailGrid = "#detailItem";
+  const masterGrid = "#jqGrid";
 
   // Fungsi navigasi untuk grid detail
-  function setupKeydown(gridId, callback) {
-    $(document).off(callback).on(callback, function(e) {
-      if (e.which == 38 || e.which == 40 || e.which == 33 || e.which == 34 || e.which == 35 || e.which == 36) {
-        e.preventDefault();
-      }
+  // function setupKeydown(gridId, callback) {
+  //   $(document).off(callback).on(callback, function(e) {
+  //     if (e.which == 38 || e.which == 40 || e.which == 33 || e.which == 34 || e.which == 35 || e.which == 36) {
+  //       e.preventDefault();
+  //     }
 
-      const barisTerpilih = $(gridId).jqGrid('getGridParam', 'selrow');
-      const ids = $(gridId).jqGrid('getDataIDs');
-      const indexSaatIni = ids.indexOf(barisTerpilih);
+  //     const barisTerpilih = $(gridId).jqGrid('getGridParam', 'selrow');
+  //     const ids = $(gridId).jqGrid('getDataIDs');
+  //     const indexSaatIni = ids.indexOf(barisTerpilih);
 
-      const halamanSaatIni = $(gridId).jqGrid('getGridParam', 'page');
-      const halamanTerakhir = $(gridId).jqGrid('getGridParam', 'lastpage');
-      let indexBaru;
+  //     const halamanSaatIni = $(gridId).jqGrid('getGridParam', 'page');
+  //     const halamanTerakhir = $(gridId).jqGrid('getGridParam', 'lastpage');
+  //     let indexBaru;
 
-      switch (e.which) {
-        case 38: // up
-          if (indexSaatIni > 0) {
-            indexBaru = ids[indexSaatIni - 1];
-            $(gridId).jqGrid('setSelection', indexBaru);
+  //     switch (e.which) {
+  //       case 38: // up
+  //         if (indexSaatIni > 0) {
+  //           indexBaru = ids[indexSaatIni - 1];
+  //           $(gridId).jqGrid('setSelection', indexBaru);
+  //         }
+  //         break;
+  //       case 40: // down
+  //         if (indexSaatIni < ids.length - 1) {
+  //           indexBaru = ids[indexSaatIni + 1];
+  //           $(gridId).jqGrid('setSelection', indexBaru);
+  //         }
+  //         break;
+  //       case 33: // page up
+  //         if (halamanSaatIni > 1) {
+  //           $(gridId).jqGrid('setGridParam', { page: halamanSaatIni - 1 }).trigger('reloadGrid');
+  //         }
+  //         break;
+  //       case 34: // page down
+  //         if (halamanSaatIni < halamanTerakhir) {
+  //           $(gridId).jqGrid('setGridParam', { page: halamanSaatIni + 1 }).trigger('reloadGrid');
+  //         }
+  //         break;
+  //       case 36: // home
+  //         if (halamanSaatIni > 1) {
+  //           $(gridId).jqGrid('setGridParam', { page: 1 }).trigger('reloadGrid');
+  //         }
+  //         break;
+  //       case 35: // end
+  //         if (halamanSaatIni < halamanTerakhir) {
+  //           $(gridId).jqGrid('setGridParam', { page: halamanTerakhir }).trigger('reloadGrid');
+  //         }
+  //         break;
+  //       default:
+  //         break;
+  //     }
+  //   });
+  // }
+
+  // Function yang lebih modular
+  function initializeGridNavigation(gridSelector) {
+      var $grid = $(gridSelector);
+      var gridId = $grid.attr('id');
+      
+      // Bersihkan event handler sebelumnya untuk grid ini
+      $grid.off('keydown.gridNav');
+      
+      // Tambahkan tabindex agar bisa menerima focus
+      $grid.attr('tabindex', '0');
+      
+      // Event handler untuk grid ini saja
+      $grid.on('keydown.gridNav', function(e) {
+          if (e.which == 38 || e.which == 40 || e.which == 33 || e.which == 34 || e.which == 35 || e.which == 36) {
+            e.preventDefault();
           }
-          break;
-        case 40: // down
-          if (indexSaatIni < ids.length - 1) {
-            indexBaru = ids[indexSaatIni + 1];
-            $(gridId).jqGrid('setSelection', indexBaru);
+
+          const barisTerpilih = $grid.jqGrid('getGridParam', 'selrow');
+          const ids = $grid.jqGrid('getDataIDs');
+          const indexSaatIni = ids.indexOf(barisTerpilih);
+
+          const halamanSaatIni = $grid.jqGrid('getGridParam', 'page');
+          const halamanTerakhir = $grid.jqGrid('getGridParam', 'lastpage');
+          let indexBaru;
+
+          switch (e.which) {
+            case 38: // up
+              if (indexSaatIni > 0) {
+                indexBaru = ids[indexSaatIni - 1];
+                $grid.jqGrid('setSelection', indexBaru);
+              }
+              break;
+            case 40: // down
+              if (indexSaatIni < ids.length - 1) {
+                indexBaru = ids[indexSaatIni + 1];
+                $grid.jqGrid('setSelection', indexBaru);
+              }
+              break;
+            case 33: // page up
+              if (halamanSaatIni > 1) {
+                $grid.jqGrid('setGridParam', { page: halamanSaatIni - 1 }).trigger('reloadGrid');
+              }
+              break;
+            case 34: // page down
+              if (halamanSaatIni < halamanTerakhir) {
+                $grid.jqGrid('setGridParam', { page: halamanSaatIni + 1 }).trigger('reloadGrid');
+              }
+              break;
+            case 36: // home
+              if (halamanSaatIni > 1) {
+                $grid.jqGrid('setGridParam', { page: 1 }).trigger('reloadGrid');
+              }
+              break;
+            case 35: // end
+              if (halamanSaatIni < halamanTerakhir) {
+                $grid.jqGrid('setGridParam', { page: halamanTerakhir }).trigger('reloadGrid');
+              }
+              break;
+            default:
+              break;
           }
-          break;
-        case 33: // page up
-          if (halamanSaatIni > 1) {
-            $(gridId).jqGrid('setGridParam', { page: halamanSaatIni - 1 }).trigger('reloadGrid');
-          }
-          break;
-        case 34: // page down
-          if (halamanSaatIni < halamanTerakhir) {
-            $(gridId).jqGrid('setGridParam', { page: halamanSaatIni + 1 }).trigger('reloadGrid');
-          }
-          break;
-        case 36: // home
-          if (halamanSaatIni > 1) {
-            $(gridId).jqGrid('setGridParam', { page: 1 }).trigger('reloadGrid');
-          }
-          break;
-        case 35: // end
-          if (halamanSaatIni < halamanTerakhir) {
-            $(gridId).jqGrid('setGridParam', { page: halamanTerakhir }).trigger('reloadGrid');
-          }
-          break;
-        default:
-          break;
-      }
-    });
+      });
+      
+      
   }
 
   // Fungsi untuk Detail Item
@@ -209,7 +277,8 @@
 
         // Highlight pencarian
         higligthPencarian($(this));
-        setupKeydown("#detailItem", 'keydown.detail');
+        // Setup navigasi untuk grid detail
+        initializeGridNavigation(detailGrid);
 
       }
     }).navGrid('#detailItemPager', { add: false, edit: false, del: false, search: false, refresh: false });
@@ -322,7 +391,8 @@
 
       // Highlight pencarian
       higligthPencarian($(this));
-      setupKeydown("#jqGrid", 'keydown.master');
+      // Setup navigasi untuk grid master
+      initializeGridNavigation(masterGrid);
     }
   });
 
