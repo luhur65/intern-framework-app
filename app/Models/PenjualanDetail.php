@@ -79,15 +79,30 @@ class PenjualanDetail extends Model
                             //     $q->whereRaw("DATE_FORMAT(penjualans.tgl_bukti, '%d-%m-%Y') LIKE ?", ["%$data%"]);
                             //     continue; // Skip ke iterasi berikutnya karena sudah di-handle
                             // }
-                            // Tambahkan kondisi pencarian lain jika perlu
-                            $q->where($field, 'like', "%{$data}%");
+                            // pencarian berdasarkan field dan data
+                            if ($field == 'total') {
+                                // Filter langsung ke ekspresi qty * harga
+                                // $q->whereRaw('(qty * harga) LIKE ?', ["%$data%"]);
+                                // $q->whereRaw("FORMAT(qty * harga, 2, 'id_ID') LIKE ?", ["%$data%"]);
+                                // $q->whereRaw("REPLACE(FORMAT(qty * harga, 2), ',', '') LIKE ?", ["%" . str_replace(',', '', $data) . "%"]);
+                                $q->whereRaw("FORMAT(qty * harga, 2) LIKE ?", ["%$data%"]);
+
+                            } elseif ($field == 'harga') {
+                                $q->whereRaw("FORMAT(harga, 2) LIKE ?", ["%$data%"]);
+
+                            } elseif ($field == 'qty') {
+                                $q->whereRaw("FORMAT(qty, 2) LIKE ?", ["%$data%"]);
+
+                            } else {
+                                $q->where($field, 'like', "%{$data}%");
+                            }
                         }
                     }
                 });
             }
         }
 
-        $baseQuery->where('penjualan_id', $params['penjualan_id'])->count();
+        $baseQuery->where('penjualan_id', $params['penjualan_id']);
 
         // Clone query untuk menghitung total
         $countQuery = clone $baseQuery;

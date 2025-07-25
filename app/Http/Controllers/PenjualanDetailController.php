@@ -13,7 +13,7 @@ class PenjualanDetailController extends Controller
     public function __construct(Request $request)
     {
         $this->gridParams = [
-            'sidx'   => $request->input('sidx', 'id_detail'),
+            'sidx'   => $request->input('sidx', 'id'),
             'sord'   => $request->input('sord', 'asc'),
             'page'   => (int) $request->input('page', 1),
             'limit'  => (int) $request->input('rows', 10),

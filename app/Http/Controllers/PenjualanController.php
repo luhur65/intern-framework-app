@@ -17,7 +17,7 @@ class PenjualanController extends Controller
         // sidx: field untuk sorting, sord: arah sorting (asc/desc), page: halaman, limit: jumlah data per halaman
         // start: offset untuk pagination, global_search: untuk pencarian global, search: untuk filter pencarian
         $this->gridParams = [
-            'sidx'   => \request()->input('sidx', 'id_penjualan'),
+            'sidx'   => \request()->input('sidx', 'id'),
             'sord'   => \request()->input('sord', 'asc'),
             'page'   => (int) \request()->input('page', 1),
             'limit'  => (int) \request()->input('rows', 10),

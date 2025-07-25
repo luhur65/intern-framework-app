@@ -23,11 +23,117 @@
 
 @endsection
 
+@push('style')
+<style>
+    /* .ui-jqgrid .ui-jqgrid-titlebar {
+      background-color: #187bdf;
+      border-bottom: 1px solid #dee2e6;
+    }
+    .ui-jqgrid .ui-jqgrid-pager {
+      background-color: #e40606;
+      border-top: 1px solid #dee2e6;
+    } */
+
+    .ui-search-toolbar input[type="text"] {
+      width: 100%;
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 4px;
+      border: 1px solid #7fa9d3;
+      outline: none
+    }
+
+    #gsh_jqGrid_rn > div {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+    }
+
+    #reset_search {
+      border-radius: 4px;
+      border: 1px solid #c00;
+      outline: none;
+      cursor: pointer;
+      background-color: #e40606;
+      color: white;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+      font-size: 16px;
+    }
+
+    #reset_search:hover {
+      background-color: #c00;
+
+    }
+
+
+
+    /* baris rownumber nya ada padding */
+</style>
+@endpush
+
 @push('script')
 
   <script>
 
   const selectId = null;
+
+  // Fungsi navigasi untuk grid detail
+  function setupKeydown(gridId, callback) {
+    $(document).off(callback).on(callback, function(e) {
+      if (e.which == 38 || e.which == 40 || e.which == 33 || e.which == 34 || e.which == 35 || e.which == 36) {
+        e.preventDefault();
+      }
+
+      const barisTerpilih = $(gridId).jqGrid('getGridParam', 'selrow');
+      const ids = $(gridId).jqGrid('getDataIDs');
+      const indexSaatIni = ids.indexOf(barisTerpilih);
+
+      const halamanSaatIni = $(gridId).jqGrid('getGridParam', 'page');
+      const halamanTerakhir = $(gridId).jqGrid('getGridParam', 'lastpage');
+      let indexBaru;
+
+      switch (e.which) {
+        case 38: // up
+          if (indexSaatIni > 0) {
+            indexBaru = ids[indexSaatIni - 1];
+            $(gridId).jqGrid('setSelection', indexBaru);
+          }
+          break;
+        case 40: // down
+          if (indexSaatIni < ids.length - 1) {
+            indexBaru = ids[indexSaatIni + 1];
+            $(gridId).jqGrid('setSelection', indexBaru);
+          }
+          break;
+        case 33: // page up
+          if (halamanSaatIni > 1) {
+            $(gridId).jqGrid('setGridParam', { page: halamanSaatIni - 1 }).trigger('reloadGrid');
+          }
+          break;
+        case 34: // page down
+          if (halamanSaatIni < halamanTerakhir) {
+            $(gridId).jqGrid('setGridParam', { page: halamanSaatIni + 1 }).trigger('reloadGrid');
+          }
+          break;
+        case 36: // home
+          if (halamanSaatIni > 1) {
+            $(gridId).jqGrid('setGridParam', { page: 1 }).trigger('reloadGrid');
+          }
+          break;
+        case 35: // end
+          if (halamanSaatIni < halamanTerakhir) {
+            $(gridId).jqGrid('setGridParam', { page: halamanTerakhir }).trigger('reloadGrid');
+          }
+          break;
+        default:
+          break;
+      }
+    });
+  }
 
   // Fungsi untuk Detail Item
   function detailTable(id) {
@@ -59,8 +165,8 @@
           index: 'total',
           width: 120,
           align: "right",
-          sortable: false,
-          search: false,
+          // sortable: false,
+          // search: false,
           formatter: 'currency',
           formatoptions: formatOpt,
         },
@@ -68,7 +174,7 @@
       rowNum: 10,
       rowList: [5, 10, 20],
       pager: '#detailItemPager',
-      sortname: 'penjualan_id',
+      sortname: 'id',
       viewrecords: true,
       gridview: true,
       // width: 600,
@@ -103,6 +209,8 @@
 
         // Highlight pencarian
         higligthPencarian($(this));
+        setupKeydown("#detailItem", 'keydown.detail');
+
       }
     }).navGrid('#detailItemPager', { add: false, edit: false, del: false, search: false, refresh: false });
 
@@ -130,7 +238,9 @@
 
     });
 
+
   }
+  // End of detailTable function
   
   // MASTER GRID
   // Inisialisasi jqGrid untuk master
@@ -143,7 +253,7 @@
     colModel: [
       {
         label: 'Id Bukti',
-        name: 'id_penjualan',
+        name: 'id',
         hidden: true,
         key: true,
         width: 30
@@ -212,6 +322,7 @@
 
       // Highlight pencarian
       higligthPencarian($(this));
+      setupKeydown("#jqGrid", 'keydown.master');
     }
   });
 
@@ -245,10 +356,9 @@
 
   // global search master
   // tombol button x 
-  const buttonX = `<button id="reset_search" type="button" class="active:scale-75" title="Reset All Toolbar Search ">
-    <span class="text-2xl text-red-500 font-bold bg-sky-50 px-1 rounded active:bg-sky-600 active:text-slate-50">X</span>
+  const buttonX = `<button id="reset_search" type="button" class="" title="Reset All Toolbar Search ">X</span>
   </button>`;
-  $('#gsh_jqGrid_rn').append(buttonX);
+  $('#gsh_jqGrid_rn div').append(buttonX);
   $('#reset_search').click(function () {
     $('#gsearch').val('');
     resetSearch();
@@ -278,8 +388,8 @@
   // Global Search
   const globalSearchElem = `
     <div class='ui-jqgrid-titlebar ui-widget-header'>
-      Global Search : 
-      <input type='text' name='gsearch' id='gsearch' size='20' class='bg-slate-50 rounded-md outline-none text-slate-700 indent-2'>
+      Global Search :
+      <input type='text' name='gsearch' id='gsearch' class='rounded border-0' placeholder='.....' style='width: 300px; height: 30px; padding: 0 10px;'>
     </div>`;
   $('.ui-jqgrid-titlebar').after(globalSearchElem);
 
@@ -304,95 +414,111 @@
 
   });
 
+  
+  // $('#jqGrid').on('mouseenter', function() {
+  //   setupKeydown("#jqGrid", 'keydown.master');
+  //   $(document).off('keydown.detail');
+  // });
+  // $('#jqGrid').on('mouseleave', function() {
+  //   $(document).off('keydown.master');
+  // });
+
+  // $('#detailItem').on('mouseenter', function() {
+  //   setupKeydown("#detailItem", 'keydown.detail');
+  //   $(document).off('keydown.master');
+  // });
+  // $('#detailItem').on('mouseleave', function() {
+  //   $(document).off('keydown.detail');
+  // });
+
   // navigasi 
   // navigasi user (custom)
-  $(document).on("keydown", function(e) {
+  // $(document).on("keydown", function(e) {
   // $(document).off('keydown.jqgrid').on('keydown.jqgrid', function(e) { // lebih bagus karna bisa autofocus
-    // Cek apakah ada input yang sedang fokus
-    // if ($('input:focus, textarea:focus').length > 0) {
-    //   return;
-    // }
+  //   // Cek apakah ada input yang sedang fokus
+  //   // if ($('input:focus, textarea:focus').length > 0) {
+  //   //   return;
+  //   // }
 
-    if (e.which == 38 || e.which == 40 || e.which == 33 || e.which == 34 || e.which == 35 || e.which == 36) {
-      e.preventDefault();
-    }
+  //   if (e.which == 38 || e.which == 40 || e.which == 33 || e.which == 34 || e.which == 35 || e.which == 36) {
+  //     e.preventDefault();
+  //   }
 
-    // ambil id yang dipilih
-    const barisTerpilih = getSelectedRowId();
-    const ids = $("#jqGrid").jqGrid('getDataIDs'); // console.log("Total Index: ", ids.length - 1); = 9
-    const indexSaatIni = ids.indexOf(barisTerpilih);
+  //   // ambil id yang dipilih
+  //   const barisTerpilih = getSelectedRowId();
+  //   const ids = $("#jqGrid").jqGrid('getDataIDs'); // console.log("Total Index: ", ids.length - 1); = 9
+  //   const indexSaatIni = ids.indexOf(barisTerpilih);
 
-    // Page Saat ini
-    const halamanSaatIni = $("#jqGrid").jqGrid('getGridParam', 'page');
-    const halamanTerakhir = $("#jqGrid").jqGrid('getGridParam', 'lastpage');
+  //   // Page Saat ini
+  //   const halamanSaatIni = $("#jqGrid").jqGrid('getGridParam', 'page');
+  //   const halamanTerakhir = $("#jqGrid").jqGrid('getGridParam', 'lastpage');
     
-    let indexBaru;
+  //   let indexBaru;
 
-    switch (e.which) {
-      case 38: // arrow up
-        // e.preventDefault();
-        if (indexSaatIni > 0) {
-          indexBaru = ids[indexSaatIni - 1];
-          selectRow(indexBaru);
-          console.info("NAIK");
-          console.log("Index sebelum naik: ", indexSaatIni);
-          console.log("Naik ke index: ", indexSaatIni - 1);
-        } 
-        break;
+  //   switch (e.which) {
+  //     case 38: // arrow up
+  //       // e.preventDefault();
+  //       if (indexSaatIni > 0) {
+  //         indexBaru = ids[indexSaatIni - 1];
+  //         selectRow(indexBaru);
+  //         console.info("NAIK");
+  //         console.log("Index sebelum naik: ", indexSaatIni);
+  //         console.log("Naik ke index: ", indexSaatIni - 1);
+  //       } 
+  //       break;
       
-      case 40: // arrow down
-        // e.preventDefault();
-        if (indexSaatIni < ids.length - 1) {
-          indexBaru = ids[indexSaatIni + 1];
-          selectRow(indexBaru);
-          console.info("TURUN");
-          console.log("Index sebelum turun: ", indexSaatIni);
-          console.log("Turun ke index: ", indexSaatIni + 1);
-        }
-      break;
+  //     case 40: // arrow down
+  //       // e.preventDefault();
+  //       if (indexSaatIni < ids.length - 1) {
+  //         indexBaru = ids[indexSaatIni + 1];
+  //         selectRow(indexBaru);
+  //         console.info("TURUN");
+  //         console.log("Index sebelum turun: ", indexSaatIni);
+  //         console.log("Turun ke index: ", indexSaatIni + 1);
+  //       }
+  //     break;
 
-      case 33: // page up
-        // e.preventDefault();
-        if (halamanSaatIni > 1) {
-          console.log("PAGE UP");
-          console.info("Pindah halaman ke: ", halamanSaatIni - 1);
-          $("#jqGrid").jqGrid('setGridParam', { page: halamanSaatIni - 1 }).trigger('reloadGrid');
-        }
-        break;
+  //     case 33: // page up
+  //       // e.preventDefault();
+  //       if (halamanSaatIni > 1) {
+  //         console.log("PAGE UP");
+  //         console.info("Pindah halaman ke: ", halamanSaatIni - 1);
+  //         $("#jqGrid").jqGrid('setGridParam', { page: halamanSaatIni - 1 }).trigger('reloadGrid');
+  //       }
+  //       break;
 
-      case 34: // page down
-        // e.preventDefault();
-        if (halamanSaatIni < halamanTerakhir) {
-          console.log("PAGE DOWN");
-          console.info("Pindah halaman ke: ", halamanSaatIni + 1);
-          $("#jqGrid").jqGrid('setGridParam', { page: halamanSaatIni + 1 }).trigger('reloadGrid');
-        }
-        break;
+  //     case 34: // page down
+  //       // e.preventDefault();
+  //       if (halamanSaatIni < halamanTerakhir) {
+  //         console.log("PAGE DOWN");
+  //         console.info("Pindah halaman ke: ", halamanSaatIni + 1);
+  //         $("#jqGrid").jqGrid('setGridParam', { page: halamanSaatIni + 1 }).trigger('reloadGrid');
+  //       }
+  //       break;
 
-      case 36: // home
-        // e.preventDefault();
-        if (halamanSaatIni > 1) {
-          console.log("HOME");
-          console.info("Halaman PERTAMA");
-          $("#jqGrid").jqGrid('setGridParam', { page: 1 }).trigger('reloadGrid');
-        }
-        break;
+  //     case 36: // home
+  //       // e.preventDefault();
+  //       if (halamanSaatIni > 1) {
+  //         console.log("HOME");
+  //         console.info("Halaman PERTAMA");
+  //         $("#jqGrid").jqGrid('setGridParam', { page: 1 }).trigger('reloadGrid');
+  //       }
+  //       break;
 
-      case 35: // end
-        // e.preventDefault();
-        if (halamanSaatIni < halamanTerakhir) {
-          console.log("END");
-          console.info("Halaman TERAKHIR");
-          $("#jqGrid").jqGrid('setGridParam', { page: halamanTerakhir }).trigger('reloadGrid');
-        }
-        break;
+  //     case 35: // end
+  //       // e.preventDefault();
+  //       if (halamanSaatIni < halamanTerakhir) {
+  //         console.log("END");
+  //         console.info("Halaman TERAKHIR");
+  //         $("#jqGrid").jqGrid('setGridParam', { page: halamanTerakhir }).trigger('reloadGrid');
+  //       }
+  //       break;
 
-      default:
-        break;
-    }
+  //     default:
+  //       break;
+  //   }
 
 
-  });
-
+  // });
   </script>
 @endpush
