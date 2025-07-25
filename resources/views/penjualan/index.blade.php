@@ -52,7 +52,7 @@
       box-sizing: border-box;
     }
 
-    #reset_search {
+    .reset-search-btn {
       border-radius: 4px;
       border: 1px solid #c00;
       outline: none;
@@ -64,7 +64,7 @@
       font-size: 16px;
     }
 
-    #reset_search:hover {
+    .reset-search-btn:hover {
       background-color: #c00;
 
     }
@@ -136,180 +136,6 @@
   //     }
   //   });
   // }
-
-  // Function yang lebih modular
-  function initializeGridNavigation(gridSelector) {
-      var $grid = $(gridSelector);
-      var gridId = $grid.attr('id');
-      
-      // Bersihkan event handler sebelumnya untuk grid ini
-      $grid.off('keydown.gridNav');
-      
-      // Tambahkan tabindex agar bisa menerima focus
-      $grid.attr('tabindex', '0');
-      
-      // Event handler untuk grid ini saja
-      $grid.on('keydown.gridNav', function(e) {
-          if (e.which == 38 || e.which == 40 || e.which == 33 || e.which == 34 || e.which == 35 || e.which == 36) {
-            e.preventDefault();
-          }
-
-          const barisTerpilih = $grid.jqGrid('getGridParam', 'selrow');
-          const ids = $grid.jqGrid('getDataIDs');
-          const indexSaatIni = ids.indexOf(barisTerpilih);
-
-          const halamanSaatIni = $grid.jqGrid('getGridParam', 'page');
-          const halamanTerakhir = $grid.jqGrid('getGridParam', 'lastpage');
-          let indexBaru;
-
-          switch (e.which) {
-            case 38: // up
-              if (indexSaatIni > 0) {
-                indexBaru = ids[indexSaatIni - 1];
-                $grid.jqGrid('setSelection', indexBaru);
-              }
-              break;
-            case 40: // down
-              if (indexSaatIni < ids.length - 1) {
-                indexBaru = ids[indexSaatIni + 1];
-                $grid.jqGrid('setSelection', indexBaru);
-              }
-              break;
-            case 33: // page up
-              if (halamanSaatIni > 1) {
-                $grid.jqGrid('setGridParam', { page: halamanSaatIni - 1 }).trigger('reloadGrid');
-              }
-              break;
-            case 34: // page down
-              if (halamanSaatIni < halamanTerakhir) {
-                $grid.jqGrid('setGridParam', { page: halamanSaatIni + 1 }).trigger('reloadGrid');
-              }
-              break;
-            case 36: // home
-              if (halamanSaatIni > 1) {
-                $grid.jqGrid('setGridParam', { page: 1 }).trigger('reloadGrid');
-              }
-              break;
-            case 35: // end
-              if (halamanSaatIni < halamanTerakhir) {
-                $grid.jqGrid('setGridParam', { page: halamanTerakhir }).trigger('reloadGrid');
-              }
-              break;
-            default:
-              break;
-          }
-      });
-      
-      
-  }
-
-  // Fungsi untuk Detail Item
-  function detailTable(id) {
-
-    const formatOpt = {
-      prefix: '',
-      thousandsSeparator: ',',
-      decimalPlaces: 2,
-      decimalSeparator: '.',
-    }
-
-    // Detail Table
-    jQuery("#detailItem").jqGrid({
-      mtype: "GET",
-      // styleUI: 'Bootstrap4',
-      iconSet: 'fontAwesome',
-      shrinkToFit: true,
-      autowidth: true,
-      url: "penjualan/" + id + "/detail",
-      datatype: "json",
-      colNames: ['Nama Barang', 'Banyak Barang', 'Harga Satuan (Rp)', 'Total (Rp)'],
-      colModel: [
-        // { name: 'num', index: 'num', width: 55 },
-        { name: 'nama_barang', index: 'nama_barang', width: 120 },
-        { name: 'qty', index: 'qty', width: 120, align: "right" },
-        { name: 'harga', index: 'harga', width: 120, align: "right", formatter: 'currency', formatoptions: formatOpt },
-        {
-          name: 'total',
-          index: 'total',
-          width: 120,
-          align: "right",
-          // sortable: false,
-          // search: false,
-          formatter: 'currency',
-          formatoptions: formatOpt,
-        },
-      ],
-      rowNum: 10,
-      rowList: [5, 10, 20],
-      pager: '#detailItemPager',
-      sortname: 'id',
-      viewrecords: true,
-      gridview: true,
-      // width: 600,
-      height: 'auto',
-      sortorder: "asc",
-      multiselect: false,
-      rownumbers: true,
-      caption: "Penjualan Detail",
-      footerrow: true,
-      userDataOnFooter: true,
-      gridComplete: function () {
-
-        const arrTotalHarga = $(this).jqGrid('getCol', 'total', false);
-        const arrTotalBarang = $(this).jqGrid('getCol', 'qty', false);
-
-        let totalHarga = 0;
-        let totalBarang = 0;
-
-        arrTotalHarga.forEach(function (val) {
-          // Jika backend kirim angka, cukup parseFloat
-          let num = typeof val === 'number' ? val : parseFloat(val);
-          if (!isNaN(num)) totalHarga += num;
-        });
-
-        arrTotalBarang.forEach(function (val) {
-          // Jika backend kirim angka, cukup parseFloat
-          let num = typeof val === 'number' ? val : parseFloat(val);
-          if (!isNaN(num)) totalBarang += num;
-        });
-
-        $("#detailItem").jqGrid('footerData', 'set', { nama_barang: 'Total:', total: totalHarga, qty: totalBarang });
-
-        // Highlight pencarian
-        higligthPencarian($(this));
-        // Setup navigasi untuk grid detail
-        initializeGridNavigation(detailGrid);
-
-      }
-    }).navGrid('#detailItemPager', { add: false, edit: false, del: false, search: false, refresh: false });
-
-    // Filter Bar untuk detail 
-    // Filter Bar => Untuk mencari data
-    $('#detailItem').jqGrid('filterToolbar', {
-      autosearch: true,
-      stringResult: true,
-      searchOnEnter: false,
-      defaultSearch: "cn",
-      multipleSearch: true,
-      beforeSearch: function () {
-        const postData = $('#detailItem').getGridParam("postData");
-        delete postData.global_search;
-
-        $('#detailItem').setGridParam({
-          search: true,
-          page: 1,
-          postData: {
-            _search: true,
-          }
-        }).trigger('reloadGrid');
-
-      }
-
-    });
-
-
-  }
-  // End of detailTable function
   
   // MASTER GRID
   // Inisialisasi jqGrid untuk master
@@ -426,33 +252,24 @@
 
   // global search master
   // tombol button x 
-  const buttonX = `<button id="reset_search" type="button" class="" title="Reset All Toolbar Search ">X</span>
-  </button>`;
-  $('#gsh_jqGrid_rn div').append(buttonX);
-  $('#reset_search').click(function () {
-    $('#gsearch').val('');
-    resetSearch();
-
-    // hapus data pencarian
-    const postData = $('#jqGrid').getGridParam("postData");
-    delete postData.global_search;
-    delete postData.filters;
-
-    // Reset postData dan search = false
-    $('#jqGrid').setGridParam({
-      search: false,
-      postData: {
-        _search: false,
+  // const buttonX = `<button id="reset_search" type="button" class="" title="Reset All Toolbar Search ">X</span>
+  // </button>`;
+  // $('#gsh_jqGrid_rn div').append(buttonX); // master grid
+  const masterButton = createResetButtonElement('master');
+  $('#gsh_jqGrid_rn div').append(masterButton);
+  
+  
+  
+  // Event handler menggunakan class (lebih fleksibel)
+  $(document).on('click', '.reset-search-btn', function() {
+      const buttonId = $(this).attr('id');
+      
+      if (buttonId === 'reset_search_master') {
+          resetToolbarSearch('#jqGrid'); // Reset master grid
+      } 
+      else if (buttonId === 'reset_search_detail') {
+          resetToolbarSearch('#detailItem'); // Reset detail grid
       }
-    }).trigger('reloadGrid', [{ page: 1 }]);
-
-    // Bersihkan highlight pada semua cell
-    $('#jqGrid').find('td').each(function () {
-      let html = $(this).html();
-      html = html.replace(/<span class="highlight">(.*?)<\/span>/gi, "$1");
-      $(this).html(html);
-    });
-
   });
 
   // Global Search
