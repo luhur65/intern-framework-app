@@ -99,6 +99,7 @@ function initializeGridNavigation(gridSelector) {
   $grid.on('keydown.gridNav', function (e) {
     if (e.which == 38 || e.which == 40 || e.which == 33 || e.which == 34 || e.which == 35 || e.which == 36) {
       e.preventDefault();
+      $grid.focus();
     }
 
     const barisTerpilih = $grid.jqGrid('getGridParam', 'selrow');
@@ -163,7 +164,7 @@ function detailTable(id) {
   // Detail Table
   jQuery("#detailItem").jqGrid({
     mtype: "GET",
-    // styleUI: 'Bootstrap4',
+    styleUI: 'Bootstrap4',
     iconSet: 'fontAwesome',
     shrinkToFit: true,
     autowidth: true,
@@ -189,7 +190,7 @@ function detailTable(id) {
     rowNum: 10,
     rowList: [5, 10, 20],
     pager: '#detailItemPager',
-    sortname: 'id',
+    sortname: 'nama_barang',
     viewrecords: true,
     gridview: true,
     // width: 600,

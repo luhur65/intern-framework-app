@@ -20,26 +20,73 @@
     <div id="detailItemPager"></div>
   </div>
 
+  <!-- Modal -->
+  <div class="modal fade" id="formModal" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="formModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="formModalLabel">
+            Tambah Data Penjualan
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          ...
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary">Understood</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
 @endsection
 
 @push('style')
 <style>
-    /* .ui-jqgrid .ui-jqgrid-titlebar {
-      background-color: #187bdf;
-      border-bottom: 1px solid #dee2e6;
+    .ui-jqgrid .ui-jqgrid-titlebar {
+      background-color: #26915c;
+      color: white;
+      /* border-bottom: 1px solid #dee2e6; */
     }
     .ui-jqgrid .ui-jqgrid-pager {
-      background-color: #e40606;
-      border-top: 1px solid #dee2e6;
-    } */
+      background-color: #26915c;
+      /* border-top: 1px solid #dee2e6; */
+    }
+    
+    .ui-jqgrid .ui-jqgrid-labels th {
+      background-color: #3c8f65;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .table-active {
+      background-color: #7be7a5 !important;
+    }
+
+    .ui-jqgrid .ui-jqgrid-pager .ui-paging-info,
+    .ui-jqgrid .ui-jqgrid-pager #input_jqGridPager,
+    .ui-jqgrid .ui-jqgrid-pager #input_detailItemPager {
+      color: white;
+    }
+
+    .ui-jqgrid .ui-jqgrid-pager .ui-pg-button {
+      color: white;
+      background-color: #26915c;
+      border: none;
+    }
 
     .ui-search-toolbar input[type="text"] {
       width: 100%;
       height: 30px;
       padding: 0 10px;
       border-radius: 4px;
-      border: 1px solid #7fa9d3;
+      border: 2px solid #7fd391;
       outline: none
     }
 
@@ -69,9 +116,11 @@
 
     }
 
-
-
-    /* baris rownumber nya ada padding */
+    .ui-pg-table #AddHeader { 
+      padding: 5px;
+      background-color: #125824;
+      border-radius: 5px;
+    }
 </style>
 @endpush
 
@@ -142,7 +191,7 @@
   $('#jqGrid').jqGrid({
     url: "/penjualan/master",
     mtype: "GET",
-    // styleUI: 'Bootstrap4',
+    styleUI: 'Bootstrap4',
     iconSet: 'fontAwesome',
     datatype: "JSON",
     colModel: [
@@ -205,12 +254,12 @@
         // $("#jqGrid").jqGrid('setSelection', selectId);
         // console.log(selectId);
         detailTable(selectId);
-        console.log(selectId)
+        // console.log(selectId)
 
       } else {
         selectRow(ids[0]);
         detailTable(ids[0]);
-        console.log(ids[0]);
+        // console.log(ids[0]);
 
       }
 
@@ -258,8 +307,6 @@
   const masterButton = createResetButtonElement('master');
   $('#gsh_jqGrid_rn div').append(masterButton);
   
-  
-  
   // Event handler menggunakan class (lebih fleksibel)
   $(document).on('click', '.reset-search-btn', function() {
       const buttonId = $(this).attr('id');
@@ -301,6 +348,19 @@
 
   });
 
+  // tombol tambah
+  $("#jqGrid").jqGrid('navButtonAdd', '#jqGridPager', {
+    caption: 'Tambah',
+    buttonicon: 'fa-plus-circle',
+    onClickButton: function () {
+      // tambahBarang();
+      $('#formModal').modal('show');
+    },
+    position: 'first',
+    title: 'Add',
+    id: "AddHeader",
+    cursor: "pointer",
+  });
   
   // $('#jqGrid').on('mouseenter', function() {
   //   setupKeydown("#jqGrid", 'keydown.master');

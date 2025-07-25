@@ -5,15 +5,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.3/themes/cupertino/jquery-ui.css">
-
+    
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-
+    
+    <link rel="stylesheet" href="{{ asset('jqgrid/css/jquery-ui.min.css') }}">
+    
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     
     <link rel="stylesheet" href="{{ asset('jqgrid/css/ui.jqgrid-bootstrap4.css') }}">
+
+    <link rel="stylesheet" href="{{ asset('jqgrid/css/my-style.css') }}">
 
     <title>@yield('title') | {{ env('APP_NAME') }}</title>
 
@@ -62,9 +66,10 @@
     </main>
 
     <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
-    {{-- <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script> --}}
-    <script src="{{ asset('jqgrid/jquery-3.6.0.js') }}"></script>
-    {{-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script> --}}
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    {{-- <script src="{{ asset('jqgrid/jquery-3.6.0.js') }}"></script> --}}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
     <script src="{{ asset('jqgrid/js/jquery.jqGrid.min.js') }}"></script>
     <script src="{{ asset('jqgrid/js/i18n/grid.locale-id.js') }}"></script>
     <script src="{{ asset('laravel-jqgrid.js') }}"></script>
