@@ -57,12 +57,18 @@
       background-color: #26915c;
       /* border-top: 1px solid #dee2e6; */
     }
+
+    .ui-jgrid .ui-jqgrid-labels {
+      border-radius: 0px;
+    }
     
     .ui-jqgrid .ui-jqgrid-labels th {
       background-color: #3c8f65;
       color: white;
       font-weight: bold;
       text-align: center;
+      vertical-align: middle;
+      padding: 5px 0;
     }
 
     .table-active {
@@ -244,7 +250,7 @@
       jQuery("#detailItem").trigger('reloadGrid');
 
     },
-    loadComplete: function (response) {
+    gridComplete: function (response) {
       const ids = $("#jqGrid").jqGrid('getDataIDs');
 
       // console.log(response);
@@ -268,6 +274,7 @@
       higligthPencarian($(this));
       // Setup navigasi untuk grid master
       initializeGridNavigation(masterGrid);
+
     }
   });
 
@@ -312,25 +319,30 @@
       const buttonId = $(this).attr('id');
       
       if (buttonId === 'reset_search_master') {
+          $('#gsearch_JqGrid').val('');
           resetToolbarSearch('#jqGrid'); // Reset master grid
       } 
       else if (buttonId === 'reset_search_detail') {
+          $('#gsearch_detailItem').val('');
           resetToolbarSearch('#detailItem'); // Reset detail grid
       }
   });
 
-  // Global Search
-  const globalSearchElem = `
+  // Global Search untuk master
+  const masterSearchElem = `
     <div class='ui-jqgrid-titlebar ui-widget-header'>
       Global Search :
-      <input type='text' name='gsearch' id='gsearch' class='rounded border-0' placeholder='.....' style='width: 300px; height: 30px; padding: 0 10px;'>
+      <input type='text' name='gsearch' id='gsearch_JqGrid' class='rounded border-0' placeholder='.....' style='width: 300px; height: 30px; padding: 0 10px;'>
     </div>`;
-  $('.ui-jqgrid-titlebar').after(globalSearchElem);
+  $('#gbox_jqGrid .ui-jqgrid-titlebar').after(masterSearchElem);
+  // Global Search untuk master
+  // const globalSearchInput = createGlobalSearchInput('#jqGrid');
+  // $('.ui-jqgrid-titlebar').after(createGlobalSearchInput('#jqGrid'));
 
-  $('#gsearch').on('keyup', function () {
+  $('#gsearch_JqGrid').on('keyup', function () {
     let text = $(this).val();
 
-    resetSearch();
+    resetToolbarSearch('#jqGrid');
 
     //ada banyak parameter grid, salah satunya postData. untuk nngeliat bisa bikin getGridParam
     //untuk nambahin isi dari parameternya bisa dibuat pake setGridParam

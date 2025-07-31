@@ -53,16 +53,16 @@ class PenjualanDetail extends Model
 
         // Filter berdasarkan penjualan_id
         // --- Pencarian ---
-        // $globalSearch = $params['global_search'] ?? '';
+        $globalSearch = $params['global_search'] ?? '';
         $search = $params['_search'] ?? 'false';
 
-        // if ($globalSearch) {
-        //     $baseQuery->where(function ($q) use ($globalSearch) {
-        //         $q->where('nama_barang', 'like', "%{$globalSearch}%")
-        //             ->orWhere('qty', 'like', "%{$globalSearch}%")
-        //             ->orWhere('harga', 'like', "%{$globalSearch}%");
-        //     });
-        // }
+        if ($globalSearch) {
+            $baseQuery->where(function ($q) use ($globalSearch) {
+                $q->where('nama_barang', 'like', "%{$globalSearch}%")
+                    ->orWhere('qty', 'like', "%{$globalSearch}%")
+                    ->orWhere('harga', 'like', "%{$globalSearch}%");
+            });
+        }
 
         if ($search == 'true') {
             $filters = $params['filters'] ?? [];

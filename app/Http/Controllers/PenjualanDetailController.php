@@ -10,18 +10,19 @@ class PenjualanDetailController extends Controller
     protected $gridParams = [];
     protected $filters = [];
 
-    public function __construct(Request $request)
+    public function __construct()
     {
         $this->gridParams = [
-            'sidx'   => $request->input('sidx', 'id'),
-            'sord'   => $request->input('sord', 'asc'),
-            'page'   => (int) $request->input('page', 1),
-            'limit'  => (int) $request->input('rows', 10),
+            'sidx'   => request()->input('sidx', 'id'),
+            'sord'   => request()->input('sord', 'asc'),
+            'page'   => (int) request()->input('page', 1),
+            'limit'  => (int) request()->input('rows', 10),
         ];
 
-        $this->gridParams['_search'] = \request()->input('_search', 'false');
+        $this->gridParams['global_search'] = request()->input('global_search', '');
+        $this->gridParams['_search'] = request()->input('_search', 'false');
 
-        if (request()->input('_search') == 'true') {
+        if (request()->has('_search') && request()->input('_search') == 'true') {
             $filterJson = request()->input('filters');
             $decoded = json_decode($filterJson, true);
             if (isset($decoded['rules'])) {

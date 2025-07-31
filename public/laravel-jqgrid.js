@@ -74,12 +74,12 @@ function resetSearch(gridSelector) {
     $('#gs_qty').val('');
     $('#gs_harga').val('');
     $('#gs_total').val('');
-
+    
   } else {
     $('#gs_no_bukti').val('');
     $('#gs_tgl_bukti').val('');
     $('#gs_nama_pelanggan').val('');
-    
+
   }
 
 }
@@ -149,6 +149,77 @@ function initializeGridNavigation(gridSelector) {
   });
 
 
+}
+
+// Buat fungsi untuk membuat tombol dengan ID unik + event handler
+function createResetButtonElement(gridId) {
+  const uniqueId = `reset_search_${gridId}`;
+  return $(`<button id="${uniqueId}" type="button" class="reset-search-btn" data-grid="#${gridId}" title="Reset All Toolbar Search">X</button>`);
+}
+
+function resetToolbarSearch(gridSelector) {
+
+  const $grid = $(gridSelector);
+
+  resetSearch(gridSelector);
+
+  // hapus data pencarian
+  const postData = $grid.getGridParam("postData");
+  delete postData.global_search;
+  delete postData.filters;
+
+  // Reset postData dan search = false
+  $grid.setGridParam({
+    search: false,
+    postData: {
+      _search: false,
+    }
+  }).trigger('reloadGrid', [{ page: 1 }]);
+
+  // Bersihkan highlight pada semua cell
+  $grid.find('td').each(function () {
+    let html = $(this).html();
+    html = html.replace(/<span class="highlight">(.*?)<\/span>/gi, "$1");
+    $(this).html(html);
+  });
+
+}
+
+function createGlobalSearchInput(gridSelector) {
+  // Cek apakah input global search sudah ada
+  const inputID = `gsearch_${gridSelector}`;
+  // const existingInput = $(`input#gsearch_${gridSelector}`);
+  // if (existingInput.length > 0) {
+  //   return existingInput.closest('.ui-jqgrid-titlebar');
+  // }
+
+  // Buat input global search
+  const globalSearchInput = $(
+    `<div class='ui-jqgrid-titlebar ui-widget-header'>
+      Global Search :
+      <input type='text' name='gsearch' id='${inputID}' class='rounded border-0' placeholder='.....' style='width: 300px; height: 30px; padding: 0 10px;'>
+    </div>`
+  );
+
+  const $inputElement = globalSearchInput.find(`input#${inputID}`); 
+
+  $inputElement.on('keyup', function (e) {
+    resetSearch(gridSelector);
+    const searchValue = $(this).val();
+    $(gridSelector).jqGrid('setGridParam', {
+      search: false,
+      page: 1,
+      postData: {
+        filters: {},
+        _search: false,
+        global_search: searchValue
+      }
+    }).trigger('reloadGrid')
+    // if (e.key === 'Enter') { // Jika ingin trigger reloadGrid hanya saat Enter ditekan
+    // }
+  });
+
+  return globalSearchInput;
 }
 
 // Fungsi untuk Detail Item
@@ -228,6 +299,7 @@ function detailTable(id) {
       // Setup navigasi untuk grid detail
       initializeGridNavigation(detailGrid);
 
+
     }
   }).navGrid('#detailItemPager', { add: false, edit: false, del: false, search: false, refresh: false });
 
@@ -255,59 +327,57 @@ function detailTable(id) {
 
   });
 
+  
   // Untuk detail grid (pastikan element ini ada di DOM Anda)
   $('#gsh_detailItem_rn div').empty(); // Kosongkan elemen sebelum menambahkan tombol baru
   const detailButton = createResetButtonElement('detail'); // Sesuaikan selector
   $('#gsh_detailItem_rn div').append(detailButton);
 
+  const detailContainer = $('#gbox_detailItem');
+  if (detailContainer.find('#gsearch_detailItem').length === 0) {
+    // Jika .length adalah 0 (elemen tidak ada), maka kita tambahkan.
+    console.log("Search bar detail belum ada, saatnya menambahkan...");
 
-}
-// End of detailTable function
+    // pencarian di detail grid
+    const detailSearchElem = `
+    <div class='ui-jqgrid-titlebar ui-widget-header'>
+      Global Search :
+      <input type='text' name='gsearch' id='gsearch_detailItem' data-selectid='${id}' class='rounded border-0' placeholder='.....' style='width: 300px; height: 30px; padding: 0 10px;'>
+    </div>`;
+    $('#gbox_detailItem .ui-jqgrid-titlebar').after(detailSearchElem);
+    // Global Search untuk master
+    // const globalSearchInput = createGlobalSearchInput('#jqGrid');
+    // $('.ui-jqgrid-titlebar').after(createGlobalSearchInput('#jqGrid'));
+  
+    $('#gsearch_detailItem').on('keyup', function () {
+      let text = $(this).val();
+  
+      resetToolbarSearch('#jqGrid');
+  
+      //ada banyak parameter grid, salah satunya postData. untuk nngeliat bisa bikin getGridParam
+      //untuk nambahin isi dari parameternya bisa dibuat pake setGridParam
+      //jadi untuk search, set dulu data baru untuk param postData. lalu di trigger dengan reloadGrid
+      //maka setelah itu, isi param postData bisa bertambah sesuai yg diinginkan
+      $('#detailItem').jqGrid('setGridParam', {
+        search: false,
+        page: 1,
+        postData: {
+          filters: {},
+          _search: false,
+          global_search: text,
+          id_penjualan: $(this).data('selectid') // Menggunakan data-selectid untuk filter
+        }
+      }).trigger('reloadGrid')
+  
+    });
 
-// Buat fungsi untuk membuat tombol dengan ID unik + event handler
-function createResetButtonElement(gridId) {
-  const uniqueId = `reset_search_${gridId}`;
-  return $(`<button id="${uniqueId}" type="button" class="reset-search-btn" data-grid="#${gridId}" title="Reset All Toolbar Search">X</button>`);
-}
+  } else {
+    // Jika .length > 0 (elemen sudah ada), kita tidak melakukan apa-apa.
+    console.log("Search bar detail sudah ada, tidak perlu ditambah lagi.");
+  }
+  
 
-function resetToolbarSearch(gridSelector) {
-
-  const $grid = $(gridSelector);
-
-  $('#gsearch').val('');
-  resetSearch(gridSelector);
-
-  // hapus data pencarian
-  const postData = $grid.getGridParam("postData");
-  delete postData.global_search;
-  delete postData.filters;
-
-  // Reset postData dan search = false
-  $grid.setGridParam({
-    search: false,
-    postData: {
-      _search: false,
-    }
-  }).trigger('reloadGrid', [{ page: 1 }]);
-
-  // Bersihkan highlight pada semua cell
-  $grid.find('td').each(function () {
-    let html = $(this).html();
-    html = html.replace(/<span class="highlight">(.*?)<\/span>/gi, "$1");
-    $(this).html(html);
-  });
+  
   
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
+// End of detailTable function
