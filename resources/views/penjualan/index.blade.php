@@ -22,7 +22,7 @@
 
   <!-- Modal -->
   <div class="modal fade" id="formModal" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="formModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="formModalLabel">
@@ -33,7 +33,72 @@
           </button>
         </div>
         <div class="modal-body">
-          ...
+          <div class="modal-body">
+            <form id="penjualanForm">
+              <input type="hidden" name="id" id="formId">
+
+  <div class="form-group row">
+    <label for="no_bukti" class="col-sm-2 col-form-label">No Bukti</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" id="no_bukti" name="no_bukti" required>
+    </div>
+  </div>
+
+  <div class="form-group row">
+    <label for="tgl_bukti" class="col-sm-2 col-form-label">Tanggal Bukti</label>
+    <div class="col-sm-10">
+      <input type="date" class="form-control" id="tgl_bukti" name="tgl_bukti" required>
+    </div>
+  </div>
+
+  <div class="form-group row">
+    <label for="nama_pelanggan" class="col-sm-2 col-form-label">Nama Pelanggan</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" id="nama_pelanggan" name="nama_pelanggan" required>
+    </div>
+  </div>
+              {{-- <input type="hidden" name="id" id="formId">
+              <div class="form-group">
+                <label for="no_bukti">No Bukti</label>
+                <input type="text" class="form-control" id="no_bukti" name="no_bukti" required>
+              </div>
+              <div class="form-group">
+                <label for="tgl_bukti">Tanggal Bukti</label>
+                <input type="date" class="form-control" id="tgl_bukti" name="tgl_bukti" required>
+              </div>
+              <div class="form-group">
+                <label for="nama_pelanggan">Nama Pelanggan</label>
+                <input type="text" class="form-control" id="nama_pelanggan" name="nama_pelanggan" required>
+              </div> --}}
+              <div class="form-group">
+                <label>Daftar Barang</label>
+                <table class="table table-bordered" id="barangTable">
+                  <thead>
+                    <tr>
+                      <th>Nama Barang</th>
+                      <th>Qty</th>
+                      <th>Harga</th>
+                      <th>Total</th>
+                      <th>
+                        <button type="button" class="btn btn-success btn-sm" id="addBarangRow">+</button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><input type="text" name="nama_barang[]" class="form-control" required></td>
+                      <td><input type="number" name="qty[]" class="form-control" min="1" required></td>
+                      <td><input type="number" name="harga[]" class="form-control" min="0" required></td>
+                      <td><input type="text" name="total[]" class="form-control" readonly></td>
+                      <td>
+                        <button type="button" class="btn btn-danger btn-sm removeBarangRow">-</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </form>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
