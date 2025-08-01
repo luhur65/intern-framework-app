@@ -406,9 +406,10 @@
 
   $('#gsearch_JqGrid').on('keyup', function () {
     let text = $(this).val();
+    // console.log("text: ", text);
 
-    resetToolbarSearch('#jqGrid');
-
+    // ga perlu reset toolbar search, karena sudah di reset di beforeSearch
+  
     //ada banyak parameter grid, salah satunya postData. untuk nngeliat bisa bikin getGridParam
     //untuk nambahin isi dari parameternya bisa dibuat pake setGridParam
     //jadi untuk search, set dulu data baru untuk param postData. lalu di trigger dengan reloadGrid
@@ -422,7 +423,6 @@
         global_search: text
       }
     }).trigger('reloadGrid')
-
   });
 
   // tombol tambah

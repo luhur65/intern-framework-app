@@ -69,7 +69,8 @@ class Penjualan extends Model
         if ($globalSearch) {
             $baseQuery->where(function ($q) use ($globalSearch) {
                 $q->where('penjualans.no_bukti', 'like', "%{$globalSearch}%")
-                    ->orWhere('penjualans.tgl_bukti', 'like', "%{$globalSearch}%")
+                    // ->orWhere('penjualans.tgl_bukti', 'like', "%{$globalSearch}%")
+                    ->orWhereRaw("DATE_FORMAT(penjualans.tgl_bukti, '%d-%m-%Y') LIKE ?", ["%{$globalSearch}%"])
                     ->orWhere('pelanggans.nama_pelanggan', 'like', "%{$globalSearch}%");
             });
         }
@@ -155,6 +156,8 @@ class Penjualan extends Model
             'total' => $total_pages,
             'records' => $count,
             'rows' => $rows->toArray(), // Konversi ke array
+            'query' => $baseQuery->toSql(), // Untuk debugging, bisa dihapus nanti
+            'bindings' => $baseQuery->getBindings(), // Untuk debugging, bisa dihapus
         ];
     }
 }
