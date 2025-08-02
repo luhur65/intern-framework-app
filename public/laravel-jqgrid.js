@@ -352,7 +352,7 @@ function detailTable(id) {
     $('#gsearch_detailItem').on('keyup', function () {
       let text = $(this).val();
   
-      resetToolbarSearch('#jqGrid');
+      // resetToolbarSearch('#jqGrid');
   
       //ada banyak parameter grid, salah satunya postData. untuk nngeliat bisa bikin getGridParam
       //untuk nambahin isi dari parameternya bisa dibuat pake setGridParam
