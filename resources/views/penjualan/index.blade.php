@@ -3,9 +3,7 @@
 
 @section('content')
   
-  <h1>Penjualan</h1>
-
-  {{-- <p class="lead">{{ $querySQL }}</p> --}}
+  {{-- <h1>Penjualan</h1> --}}
 
   <!-- tabel penjualan -->
   <div class="table-responsive">
@@ -34,29 +32,35 @@
         </div>
         <div class="modal-body">
           <div class="modal-body">
-            <form id="penjualanForm">
+            <form id="penjualanForm" method="POST" action="{{ route('penjualan.store') }}">
+              @csrf
+              {{-- <input type="hidden" name="_method" value="PUT"> --}}
               <input type="hidden" name="id" id="formId">
+              <div class="form-group row">
+                <label for="no_bukti" class="col-sm-2 col-form-label">No Bukti</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="no_bukti" name="no_bukti" required autocomplete="off" data-inputmask="'mask': 'AAA99', 'greedy': 'false', 'placeholder': '', 'showMaskOnHover': false, 'showMaskOnFocus': false" inputmode="text">
+                </div>
+              </div>
 
-  <div class="form-group row">
-    <label for="no_bukti" class="col-sm-2 col-form-label">No Bukti</label>
-    <div class="col-sm-10">
-      <input type="text" class="form-control" id="no_bukti" name="no_bukti" required>
-    </div>
-  </div>
+              <div class="form-group row">
+                <label for="tgl_bukti" class="col-sm-2 col-form-label">Tanggal Bukti</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="tgl_bukti" name="tgl_bukti" required data-inputmask="'alias': 'datetime','inputFormat': 'dd-mm-yyyy'" inputmode="numeric">
+                </div>
+              </div>
 
-  <div class="form-group row">
-    <label for="tgl_bukti" class="col-sm-2 col-form-label">Tanggal Bukti</label>
-    <div class="col-sm-10">
-      <input type="date" class="form-control" id="tgl_bukti" name="tgl_bukti" required>
-    </div>
-  </div>
-
-  <div class="form-group row">
-    <label for="nama_pelanggan" class="col-sm-2 col-form-label">Nama Pelanggan</label>
-    <div class="col-sm-10">
-      <input type="text" class="form-control" id="nama_pelanggan" name="nama_pelanggan" required>
-    </div>
-  </div>
+              <div class="form-group row">
+                <label for="nama_pelanggan" class="col-sm-2 col-form-label">Nama Pelanggan</label>
+                <div class="col-sm-10">
+                  <select style="width: 100%;padding: 20px" class="ui-widget-content ui-corner-all js-example-placeholder-single js-states js-example-matcher" id="nama_pelanggan" name="nama_pelanggan">
+                    <option value="0">PILIH PELANGGAN</option>
+                    @foreach ($pelanggans as $pelanggan)
+                      <option value="{{ $pelanggan->id }}">{{ $pelanggan->nama_pelanggan }}</option>
+                    @endforeach
+                  </select>
+                </div>
+              </div>
               {{-- <input type="hidden" name="id" id="formId">
               <div class="form-group">
                 <label for="no_bukti">No Bukti</label>
@@ -97,13 +101,13 @@
                   </tbody>
                 </table>
               </div>
-            </form>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary">Understood</button>
+          <button id="saveBtn" type="submit" class="btn btn-primary">Simpan</button>
         </div>
+      </form>
       </div>
     </div>
   </div>
@@ -192,6 +196,8 @@
       background-color: #125824;
       border-radius: 5px;
     }
+
+  
 </style>
 @endpush
 
@@ -202,6 +208,33 @@
   const selectId = null;
   const detailGrid = "#detailItem";
   const masterGrid = "#jqGrid";
+  let modalMode = 'add';
+
+  // Select2
+  $(".js-example-placeholder-single").select2({
+    placeholder: "Pilih Pelanggan",
+    allowClear: true,
+    dropdownParent: $('#formModal'),
+  });
+
+  // Datepicker
+  $('#tgl_bukti').datepicker({
+    dateFormat: 'dd-mm-yyyy',
+    changeMonth: true,
+    changeYear: true,
+    yearRange: "1900:2099",
+    maxDate: new Date(2099, 11, 31), // batas maksimum
+    minDate: new Date(1900, 0, 1)    // batas minimum
+  });
+
+  // Validate Tgl Bukti on input change
+  $(document).on('change', '#tgl_bukti', function () {
+    const tglBukti = $(this).val();
+    if (!isValidDate(tglBukti)) {
+      alert('Tanggal Bukti tidak valid. Format yang diharapkan: dd-mm-yyyy');
+      $(this).val(''); // Kosongkan input jika tidak valid
+    }
+  });
 
   // Fungsi navigasi untuk grid detail
   // function setupKeydown(gridId, callback) {
@@ -320,10 +353,10 @@
 
       // console.log(response);
 
+      console.log(selectId);
       if (selectId) {
         selectRow(selectId);
         // $("#jqGrid").jqGrid('setSelection', selectId);
-        // console.log(selectId);
         detailTable(selectId);
         // console.log(selectId)
 
@@ -431,12 +464,42 @@
     buttonicon: 'fa-plus-circle',
     onClickButton: function () {
       // tambahBarang();
-      $('#formModal').modal('show');
+      // $('#formModal').modal('show');
+      openModal('add');
     },
     position: 'first',
     title: 'Add',
     id: "AddHeader",
     cursor: "pointer",
+  });
+
+  // Simpan (Tambah/Edit)
+  $('#saveBtn').on('click', function() {
+    const id = $('#formId').val();
+    const formData = {
+      no_bukti: $('#no_bukti').val(),
+      tgl_bukti: $('#tgl_bukti').val(),
+      nama_pelanggan: $('#nama_pelanggan').val(),
+      _token: '{{ csrf_token() }}'
+    };
+    let url = '/penjualan';
+    let type = 'POST';
+
+    if (modalMode === 'edit') {
+      url = `/penjualan/${id}`;
+      type = 'PUT';
+    }
+
+    $.ajax({
+      url: url,
+      type: type,
+      data: formData,
+      success: function(res) {
+        $('#formModal').modal('hide');
+        $('#jqGrid').trigger('reloadGrid');
+        alert('Data berhasil disimpan');
+      }
+    });
   });
   
   // $('#jqGrid').on('mouseenter', function() {

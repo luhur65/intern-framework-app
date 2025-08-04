@@ -21,4 +21,14 @@ class Pelanggan extends Model
     {
         return $this->hasMany(Penjualan::class, 'pelanggan_id');
     }
+
+    /**
+     * Scope a query to only include active pelanggan.
+     */
+    public static function getDataPelanggan()
+    {
+        return self::select('id', 'nama_pelanggan')
+            ->orderBy('nama_pelanggan', 'asc')
+            ->get();
+    }
 }

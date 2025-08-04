@@ -19,6 +19,9 @@
 
     <link rel="stylesheet" href="{{ asset('jqgrid/css/my-style.css') }}">
 
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
     <title>@yield('title') | {{ env('APP_NAME') }}</title>
 
     <style>
@@ -50,6 +53,23 @@
           margin-left: 10px !important;
       }
 
+      /* Select2 */
+      .select2-selection__rendered {
+        line-height: 38px !important;
+        height: 38px !important;
+        text-transform: uppercase !important;
+      }
+
+      .select2-selection.select2-selection--single.select2-selection--clearable,
+      .select2-selection__clear,
+      .select2-selection__arrow {
+        height: 38px !important;
+      }
+
+      .col-form-label {
+        text-transform: uppercase !important;
+      }
+
     </style>
     @stack('style')
   </head>
@@ -72,6 +92,18 @@
     <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
     <script src="{{ asset('jqgrid/js/jquery.jqGrid.min.js') }}"></script>
     <script src="{{ asset('jqgrid/js/i18n/grid.locale-id.js') }}"></script>
+
+    <!-- inputmask -->
+    <script src="{{ asset('inputmask/jquery.inputmask.js') }}"></script>
+    <script src="{{ asset('inputmask/bindings/inputmask.binding.js') }}"></script>
+
+    <!-- select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- AutoNUmeric -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/autonumeric/4.8.1/autoNumeric.min.js"></script>
+
+    {{-- My Script --}}
     <script src="{{ asset('laravel-jqgrid.js') }}"></script>
     @stack('script')
   </body>

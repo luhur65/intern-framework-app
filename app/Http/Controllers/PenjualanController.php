@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Pelanggan;
 use App\Models\Penjualan;
 use Illuminate\Http\Request;
 
@@ -53,7 +54,11 @@ class PenjualanController extends Controller
         // $urlMaster = route('penjualan.master');
         // $urlDetail = route('penjualan.detail.getDetail');
         // $querySQL = Penjualan::query()->gridMaster($this->gridParams)->toSql();
-        return \view('penjualan.index');
+
+        $pelanggans = Pelanggan::getDataPelanggan();
+        return \view('penjualan.index', [
+            'pelanggans' => $pelanggans,
+        ]);
     }
     /**
      * Get master data for Penjualan.

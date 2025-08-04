@@ -336,7 +336,7 @@ function detailTable(id) {
   const detailContainer = $('#gbox_detailItem');
   if (detailContainer.find('#gsearch_detailItem').length === 0) {
     // Jika .length adalah 0 (elemen tidak ada), maka kita tambahkan.
-    console.log("Search bar detail belum ada, saatnya menambahkan...");
+    // console.log("Search bar detail belum ada, saatnya menambahkan...");
 
     // pencarian di detail grid
     const detailSearchElem = `
@@ -373,7 +373,7 @@ function detailTable(id) {
 
   } else {
     // Jika .length > 0 (elemen sudah ada), kita tidak melakukan apa-apa.
-    console.log("Search bar detail sudah ada, tidak perlu ditambah lagi.");
+    // console.log("Search bar detail sudah ada, tidak perlu ditambah lagi.");
   }
   
 
@@ -381,3 +381,45 @@ function detailTable(id) {
   
 }
 // End of detailTable function
+
+
+// Validate Tgl Bukti
+function isValidDate(dateString) {
+  // Format yang diharapkan: dd-mm-yyyy
+  const regex = /^(\d{2})-(\d{2})-(\d{4})$/;
+  const match = dateString.match(regex);
+  if (!match) return false;
+
+  const day = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const year = parseInt(match[3], 10);
+
+  // Cek range bulan
+  if (month < 1 || month > 12) return false;
+
+  // Cek hari sesuai bulan
+  const monthLengths = [31, (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0) ? 29 : 28,
+    31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+  return day >= 1 && day <= monthLengths[month - 1];
+}
+
+
+function openModal(mode, data = {}) {
+  modalMode = mode;
+  $('#formModalLabel').text(mode === 'add' ? 'Tambah Data Penjualan' : mode === 'edit' ? 'Edit Data Penjualan' : 'Hapus Data Penjualan');
+  $('#saveBtn').toggleClass('d-none', mode === 'delete');
+  $('#deleteBtn').toggleClass('d-none', mode !== 'delete');
+  $('#penjualanForm')[0].reset();
+
+  if (mode === 'edit' || mode === 'delete') {
+    $('#formId').val(data.id);
+    $('#no_bukti').val(data.no_bukti);
+    $('#tgl_bukti').val(data.tgl_bukti);
+    $('#nama_pelanggan').val(data.nama_pelanggan);
+    $('#no_bukti, #tgl_bukti, #nama_pelanggan').prop('disabled', mode === 'delete');
+  } else {
+    $('#no_bukti, #tgl_bukti, #nama_pelanggan').prop('disabled', false);
+  }
+  $('#formModal').modal('show');
+}
