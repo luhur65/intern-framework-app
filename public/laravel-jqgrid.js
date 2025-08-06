@@ -416,10 +416,109 @@ function openModal(mode, data = {}) {
     $('#formId').val(data.id);
     $('#no_bukti').val(data.no_bukti);
     $('#tgl_bukti').val(data.tgl_bukti);
-    $('#nama_pelanggan').val(data.nama_pelanggan);
-    $('#no_bukti, #tgl_bukti, #nama_pelanggan').prop('disabled', mode === 'delete');
+    $('#nama_pelanggan').val(String(data.nama_pelanggan)).trigger('change');
+    $('#no_bukti').prop('disabled', mode !== 'add'); // disable saat edit/hapus
+    $('#tgl_bukti, #nama_pelanggan').prop('disabled', mode === 'delete');
+
+    $('#tableBarang tbody').empty();
+    if (data.barang && data.barang.length > 0) {
+      // Tambahkan baris barang ke tabel
+      data.barang.forEach(item => {
+        const $row = $(HTMLBarisBarangBaru());
+        $row.find('input[name="nama_barang[]"]').val(item.nama_barang);
+        $row.find('input[name="qty[]"]').val(item.qty);
+        $row.find('input[name="harga[]"]').val(item.harga);
+        initAutoNumericRow($row);
+        $('#tableBarang tbody').append($row);
+      });
+      // data.barang.forEach((item, i) => {
+      //   const row = `
+      //   <tr class="barangRow">
+      //     <td><input type="text" name="nama_barang[]" class="form-control" value="${item.nama_barang}"></td>
+      //     <td><input type="text" name="qty[]" class="form-control qty" value="${item.qty}"></td>
+      //     <td><input type="text" name="harga[]" class="form-control harga" value="${item.harga}"></td>
+      //     <td><input type="text" name="total[]" class="form-control total" value="${item.total}" readonly></td>
+      //   </tr>
+      // `;
+      //   $('#tableBarang tbody').append(row);
+      // });
+    }
+    // updateGrandTotal();
+    // $('#tableBarang').find('.barangRow').each(function () {
+    //   initAutoNumericRow($(this));
+    // });
+    // $('#tableBarang').find('.removeBarangRow').off('click').on('click', function () {
+    //   $(this).closest('tr').remove();
+    //   updateGrandTotal();
+    // });
+    // $('#tableBarang').find('.qty, .harga').off('input').on('input', function () {
+    //   const $row = $(this).closest('tr');
+    //   updateTotalRow($row);
+    //   updateGrandTotal();
+    // });
+    // $('#tableBarang').find('.qty, .harga').each(function () {
+    //   const $row = $(this).closest('tr');
+    //   initAutoNumericRow($row);
+    // });
+
   } else {
     $('#no_bukti, #tgl_bukti, #nama_pelanggan').prop('disabled', false);
   }
   $('#formModal').modal('show');
+}
+
+function HTMLBarisBarangBaru() {
+  // Template untuk baris barang baru
+  return `
+  <tr class="barangRow">
+    <td><input type="text" name="nama_barang[]" class="form-control" required></td>
+    <td><input type="text" name="qty[]" class="form-control qty" min="1" required></td>
+    <td><input type="text" name="harga[]" class="form-control harga" min="0" required></td>
+    <td><input type="text" name="total[]" class="form-control total" readonly></td>
+    <td>
+      <button type="button" class="btn btn-danger btn-sm removeBarangRow">-</button>
+    </td>
+  </tr>
+  `;
+}
+
+function initAutoNumericRow($row) {
+  const $qty = $row.find('.qty');
+  const $harga = $row.find('.harga');
+  const $total = $row.find('.total');
+
+  const anQty = new AutoNumeric($qty[0], setQtyNumeric);
+  const anHarga = new AutoNumeric($harga[0], setMoneyNumeric);
+  const anTotal = new AutoNumeric($total[0], setMoneyNumeric);
+
+  const value = anHarga.getNumber();
+  anHarga.set(value);
+
+  updateTotalRow($row);
+}
+
+function updateTotalRow($row) {
+  const $qtyInput = $row.find('.qty');
+  const $hargaInput = $row.find('.harga');
+  const $totalInput = $row.find('.total');
+
+  const anQty = AutoNumeric.getAutoNumericElement($qtyInput[0]);
+  const anHarga = AutoNumeric.getAutoNumericElement($hargaInput[0]);
+  const anTotal = AutoNumeric.getAutoNumericElement($totalInput[0]);
+
+  const qty = anQty ? anQty.getNumber() : 0;
+  const harga = anHarga ? anHarga.getNumber() : 0;
+
+  anTotal.set(qty * harga);
+}
+
+function updateGrandTotal() {
+  let sum = 0;
+
+  $('#tableBarang .total').each(function () {
+    const anT = AutoNumeric.getAutoNumericElement(this);
+    sum += anT ? anT.getNumber() : 0;
+  });
+
+  // NumericTotal.set(sum);
 }

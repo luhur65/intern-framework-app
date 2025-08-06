@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Route;
 // });
 
 // Route Penjualan
-// Route::match(['GET', 'POST'],  '/', [PenjualanController::class, 'index'])->name('penjualan.index');
-Route::get('/', [PenjualanController::class, 'index'])->name('penjualan.index');
+Route::match(['GET', 'POST'],  '/', [PenjualanController::class, 'index'])->name('penjualan.index');
+// Route::get('/', [PenjualanController::class, 'index'])->name('penjualan.index');
 Route::get('penjualan/master', [PenjualanController::class, 'master'])->name('penjualan.master');
 Route::resource('penjualan', PenjualanController::class)->except(['index']);
 

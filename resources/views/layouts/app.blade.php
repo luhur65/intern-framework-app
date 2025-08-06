@@ -27,6 +27,8 @@
     <style>
       * {
         font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        text-transform: uppercase
       }
 
       input[type="text"] {
@@ -68,6 +70,12 @@
 
       .col-form-label {
         text-transform: uppercase !important;
+      }
+      .select2-container--default .select2-selection--single {
+        height: 38px !important;
+      }
+      td.ui-search-clear {
+        width: 30px !important;
       }
 
     </style>

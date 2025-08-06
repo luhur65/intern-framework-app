@@ -33,6 +33,7 @@
         <div class="modal-body">
           <div class="modal-body">
             <form id="penjualanForm" method="POST" action="{{ route('penjualan.store') }}">
+              {{-- <form id="penjualanForm" method="POST" action="{{ url('penjualan') }}"> --}}
               @csrf
               {{-- <input type="hidden" name="_method" value="PUT"> --}}
               <input type="hidden" name="id" id="formId">
@@ -76,7 +77,7 @@
               </div> --}}
               <div class="form-group">
                 <label>Daftar Barang</label>
-                <table class="table table-bordered" id="barangTable">
+                <table class="table table-bordered" id="tableBarang">
                   <thead>
                     <tr>
                       <th>Nama Barang</th>
@@ -89,11 +90,11 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
+                    <tr class="barangRow">
                       <td><input type="text" name="nama_barang[]" class="form-control" required></td>
-                      <td><input type="number" name="qty[]" class="form-control" min="1" required></td>
-                      <td><input type="number" name="harga[]" class="form-control" min="0" required></td>
-                      <td><input type="text" name="total[]" class="form-control" readonly></td>
+                      <td><input type="text" name="qty[]" class="form-control qty" min="1" required></td>
+                      <td><input type="text" name="harga[]" class="form-control harga" min="0" required></td>
+                      <td><input type="text" name="total[]" class="form-control total" readonly></td>
                       <td>
                         <button type="button" class="btn btn-danger btn-sm removeBarangRow">-</button>
                       </td>
@@ -104,7 +105,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-outline-danger" data-dismiss="modal">Close</button>
           <button id="saveBtn" type="submit" class="btn btn-primary">Simpan</button>
         </div>
       </form>
@@ -191,10 +192,13 @@
 
     }
 
-    .ui-pg-table #AddHeader { 
+    .ui-pg-table #AddHeader,
+    .ui-pg-table #EditHeader,
+    .ui-pg-table #DeleteHeader { 
       padding: 5px;
-      background-color: #125824;
+      /* background-color: #125824; */
       border-radius: 5px;
+      margin: 0px 50px;
     }
 
   
@@ -205,10 +209,36 @@
 
   <script>
 
+  let modalMode = 'add';
+  let dataBarang = [];
   const selectId = null;
   const detailGrid = "#detailItem";
   const masterGrid = "#jqGrid";
-  let modalMode = 'add';
+  const tableBarang = $('#tableBarang').length > 0 ? $('#tableBarang') : null;
+  const barangRow = tableBarang ? tableBarang.find('.barangRow') : null;
+  const barangRowCount = tableBarang ? tableBarang.find('.barangRow').length : 0;
+  const setDatePicker = {
+    dateFormat: 'dd-mm-yyyy',
+    changeMonth: true,
+    changeYear: true,
+    yearRange: "1900:2099",
+    maxDate: new Date(2099, 11, 31), // batas maksimum
+    minDate: new Date(1900, 0, 1)    // batas minimum
+  };
+  const setMoneyNumeric = {
+    digitGroupSeparator: ',',
+    decimalCharacter: '.',
+    decimalPlaces: 2,
+    modifyValueOnWheel: false,
+    currencySymbolPlacement: 'p',
+  };
+  const setQtyNumeric = {
+    digitGroupSeparator: '', // Tanpa pemisah ribuan
+    decimalCharacter: '.',
+    decimalPlaces: 0,
+    minimumValue: '0',
+  };
+
 
   // Select2
   $(".js-example-placeholder-single").select2({
@@ -218,23 +248,16 @@
   });
 
   // Datepicker
-  $('#tgl_bukti').datepicker({
-    dateFormat: 'dd-mm-yyyy',
-    changeMonth: true,
-    changeYear: true,
-    yearRange: "1900:2099",
-    maxDate: new Date(2099, 11, 31), // batas maksimum
-    minDate: new Date(1900, 0, 1)    // batas minimum
-  });
+  $('#tgl_bukti').datepicker(setDatePicker);
 
   // Validate Tgl Bukti on input change
-  $(document).on('change', '#tgl_bukti', function () {
-    const tglBukti = $(this).val();
-    if (!isValidDate(tglBukti)) {
-      alert('Tanggal Bukti tidak valid. Format yang diharapkan: dd-mm-yyyy');
-      $(this).val(''); // Kosongkan input jika tidak valid
-    }
-  });
+  // $(document).on('change', '#tgl_bukti', function () {
+  //   const tglBukti = $(this).val();
+  //   if (!isValidDate(tglBukti)) {
+  //     alert('Tanggal Bukti tidak valid. Format yang diharapkan: dd-mm-yyyy');
+  //     $(this).val(''); // Kosongkan input jika tidak valid
+  //   }
+  // });
 
   // Fungsi navigasi untuk grid detail
   // function setupKeydown(gridId, callback) {
@@ -458,14 +481,96 @@
     }).trigger('reloadGrid')
   });
 
+  // END Filter Bar Master
+  // END MASTER GRID
+
+  // Total, Harga, Qty
+  // Fungsi untuk menghitung total harga dan qty
+  // function calculateTotal() {
+  //   let total = 0;
+
+  //   $('.barangRow').each(function() {
+  //     const qty = parseFloat($(this).find("input[name='qty[]']").val()) || 0;
+  //     const harga = parseFloat($(this).find("input[name='harga[]']").val()) || 0;
+  //     const rowTotal = qty * harga;
+
+  //     $(this).find("input[name='total[]']").val(rowTotal.toFixed(2));
+  //     total += rowTotal;
+  //   });
+
+  //   // Update total keseluruhan jika ada elemen untuk menampung total
+  //   // if ($('#totalKeseluruhan').length) {
+  //   //   $('#totalKeseluruhan').text(total.toFixed(2));
+  //   // }
+  // }
+
+  function calculateTotal() {
+    $('.barangRow').each(function () {
+      const $row = $(this);
+      const $qtyInput = $row.find('.qty');
+      const $hargaInput = $row.find('.harga');
+      const $totalInput = $row.find('.total');
+
+      // Kalau salah satu input tidak ditemukan, skip baris ini
+      // if ($qtyInput.length === 0 || $hargaInput.length === 0 || $totalInput.length === 0) {
+      //   console.warn('Input tidak lengkap dalam baris ini, lewati.');
+      //   return;
+      // }
+
+      // Inisialisasi AutoNumeric jika belum
+      let anQty = AutoNumeric.getAutoNumericElement($qtyInput[0]);
+      if (!anQty) {
+        anQty = new AutoNumeric($qtyInput[0], setQtyNumeric);
+      }
+
+      let anHarga = AutoNumeric.getAutoNumericElement($hargaInput[0]);
+      if (!anHarga) {
+        anHarga = new AutoNumeric($hargaInput[0], setMoneyNumeric);
+      }
+
+      let anTotal = AutoNumeric.getAutoNumericElement($totalInput[0]);
+      if (!anTotal) {
+        anTotal = new AutoNumeric($totalInput[0], setMoneyNumeric);
+      }
+
+      // Event input qty dan harga
+      $qtyInput.on('input', function () {
+        updateTotalRow($row);
+        // updateGrandTotal();
+      });
+
+      $hargaInput.on('input', function () {
+        const value = anHarga.getNumber();
+        anHarga.set(value); // reformat langsung
+        updateTotalRow($row);
+        // updateGrandTotal();
+      });
+
+      // Hitung total pertama kali
+      updateTotalRow($row);
+    });
+  }
+
+
+  // Event untuk menghitung total saat qty atau harga berubah
+  $(document).on('input', 'input[name="qty[]"], input[name="harga[]"]', function() {
+    calculateTotal();
+  });
+
+  // Initialize auto numeric
+  $('#tableBarang tbody tr').each(function () {
+    initAutoNumericRow($(this));
+  });
+
   // tombol tambah
   $("#jqGrid").jqGrid('navButtonAdd', '#jqGridPager', {
-    caption: 'Tambah',
-    buttonicon: 'fa-plus-circle',
+    caption: ' Tambah',
+    buttonicon: 'fa-fw fa-plus-circle',
     onClickButton: function () {
       // tambahBarang();
       // $('#formModal').modal('show');
       openModal('add');
+
     },
     position: 'first',
     title: 'Add',
@@ -473,15 +578,98 @@
     cursor: "pointer",
   });
 
+  // tombol edit
+  $("#jqGrid").jqGrid('navButtonAdd', '#jqGridPager', {
+    caption: ' Ubah',
+    buttonicon: 'fa-fw fa-pencil-alt',
+    onClickButton: function () {
+      // $('#formModal').modal('show');
+      // openModal('edit', data = {
+      //   id: "78",
+      //   no_bukti: "BKT001",
+      //   tgl_bukti: "2023-10-01",
+      //   nama_pelanggan: "4",
+      //   barang: [
+      //     { nama_barang: "Barang A", qty: 2, harga: 10000, total: 20000 },
+      //     { nama_barang: "Barang B", qty: 1, harga: 15000, total: 15000 }
+      //   ],
+      // });
+
+      const selectedId = $('#jqGrid').jqGrid('getGridParam', 'selrow');
+      if (!selectedId) {
+        alert('Silakan pilih data yang ingin diedit');
+        return;
+      }
+
+      $.ajax({
+        url: `/penjualan/${selectedId}`,
+        method: 'GET',
+        success: function (res) {
+          openModal('edit', res);
+        },
+        error: function (err) {
+          alert('Gagal mengambil data');
+          console.error(err);
+        }
+      });
+
+    },
+    position: 'last',
+    title: 'Edit',
+    id: "EditHeader",
+    cursor: "pointer",
+  });
+
   // Simpan (Tambah/Edit)
-  $('#saveBtn').on('click', function() {
+  $('#saveBtn').on('click', function(e) {
+    e.preventDefault(); // Hindari submit form default
+    
+    let dataBarang = []; // Reset array setiap klik
+
     const id = $('#formId').val();
+
+    if (modalMode === 'edit' && !id) {
+      alert('ID tidak ditemukan. Pastikan Anda memilih data yang akan diedit.');
+      return;
+    }
+
+    // Ambil semua nilai array dari inputan
+    // const nama_barang = $("input[name='nama_barang[]']").map(function(){ return $(this).val(); }).get();
+    // const qty = $("input[name='qty[]']").map(function(){ return $(this).val(); }).get();
+    // const harga = $("input[name='harga[]']").map(function(){ return $(this).val(); }).get();
+    // const total = $("input[name='total[]']").map(function(){ return $(this).val(); }).get();
+
+    $('.barangRow').each(function() {
+      const $row = $(this);
+      
+      const $nama = $row.find("input[name='nama_barang[]']").val();
+      const $qty = $row.find('.qty');
+      const $harga = $row.find('.harga');
+
+      // Dapatkan instance AutoNumeric
+      const anQty = AutoNumeric.getAutoNumericElement($qty[0]);
+      const anHarga = AutoNumeric.getAutoNumericElement($harga[0]);
+
+      // Set nilai input ke angka mentah (raw number)
+      const qtyValue = anQty ? anQty.getNumber() : 0;
+      const hargaValue = anHarga ? anHarga.getNumber() : 0;
+
+      dataBarang.push({
+        nama_barang: $nama,
+        qty: qtyValue,
+        harga: hargaValue,
+        // total: total
+      });
+    });
+
     const formData = {
+      _token: '{{ csrf_token() }}',
       no_bukti: $('#no_bukti').val(),
       tgl_bukti: $('#tgl_bukti').val(),
       nama_pelanggan: $('#nama_pelanggan').val(),
-      _token: '{{ csrf_token() }}'
+      barang: dataBarang
     };
+
     let url = '/penjualan';
     let type = 'POST';
 
@@ -607,5 +795,29 @@
 
 
   // });
+
+  // Tambahkan baris barang
+  $(document).on('click', '#addBarangRow', function() {
+    
+    // tambahkan baris baru
+    tableBarang.find('tbody').append(HTMLBarisBarangBaru());
+  });
+
+  // Hapus baris barang
+  $(document).on('click', '.removeBarangRow', function() {
+    if (tableBarang.find('tbody tr').length > 1) {
+      $(this).closest('tr').remove();
+    } 
+  });
+
+  // Reset form ketika modal ditutup
+  $('#formModal').on('hidden.bs.modal', function () {
+    modalMode = 'add'; // Set mode ke tambah
+    $('#penjualanForm')[0].reset(); // Reset form
+    $('#formId').val(''); // Kosongkan ID form
+    $('#nama_pelanggan').val('0').trigger('change'); // Reset select2
+    tableBarang.find('tbody').html(HTMLBarisBarangBaru()); // Reset tabel barang
+  });
+
   </script>
 @endpush

@@ -82,7 +82,22 @@ class PenjualanController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        // Validasi input
+        $request->validate([
+            'no_bukti' => 'required|string|max:255',
+            'tgl_bukti' => 'required|date',
+            'nama_pelanggan' => 'required|exists:pelanggans,id',
+            'barang' => 'required|array',
+            'barang.*.nama_barang' => 'required|string|max:255',
+            'barang.*.qty' => 'required|integer|min:1',
+            'barang.*.harga' => 'required|numeric|min:0',
+            'barang.*.total' => 'required|numeric|min:0',
+        ]);
+
+        // Simpan data penjualan
+        // $penjualan = Penjualan::create($request->all());
+
+        // return response()->json($penjualan, 201);
     }
 
     /**
@@ -90,7 +105,16 @@ class PenjualanController extends Controller
      */
     public function show(string $id)
     {
-        //
+        return response()->json([
+            'id' => $id,
+            'no_bukti' => 'BKT001',
+            'tgl_bukti' => '2023-10-01',
+            'nama_pelanggan' => '4', // ID Pelanggan
+            'barang' => [
+                ['nama_barang' => 'Barang A', 'qty' => 2, 'harga' => 10000, 'total' => 20000],
+                ['nama_barang' => 'Barang B', 'qty' => 1, 'harga' => 15000, 'total' => 15000],
+            ],
+        ])->setStatusCode(200, "OK");
     }
 
     /**
