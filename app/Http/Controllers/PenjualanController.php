@@ -187,7 +187,10 @@ class PenjualanController extends Controller
 
             // 2. Panggil metode statis LANGSUNG dari Model Penjualan
             //    untuk menentukan ID fokus berikutnya.
-            $idSelanjutnya = Penjualan::getIdTerdekat($request->all(), $id);
+            $this->gridParams['sidx'] = $request->input('sortname', $this->gridParams['sidx']);
+            $this->gridParams['sord'] = $request->input('sortorder', $this->gridParams['sord']);
+            $this->gridParams['limit'] = (int) $request->input('rows', $this->gridParams['limit']);
+            $idSelanjutnya = Penjualan::getIdTerdekat($this->gridParams, $id);
 
             // 3. Lanjutkan proses penghapusan melalui service
             $this->penjualanService->deletePenjualan($id);
