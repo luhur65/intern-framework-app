@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Interfaces\PenjualanServiceInterface;
+use App\Services\PenjualanService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +13,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Daftarkan binding antara interface dan implementasinya
+        $this->app->bind(PenjualanServiceInterface::class, PenjualanService::class);
     }
 
     /**

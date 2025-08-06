@@ -266,7 +266,7 @@ function detailTable(id) {
     gridview: true,
     // width: 600,
     height: 'auto',
-    sortorder: "asc",
+    sortorder: "desc",
     multiselect: false,
     rownumbers: true,
     caption: "Penjualan Detail",
@@ -430,6 +430,11 @@ function openModal(mode, data = {}) {
         $row.find('input[name="harga[]"]').val(item.harga);
         initAutoNumericRow($row);
         $('#tableBarang tbody').append($row);
+
+        // disabled input
+        $row.find('input[name="nama_barang[]"]').prop('disabled', mode === 'delete')
+        $row.find('input[name="qty[]"]').prop('disabled', mode === 'delete')
+        $row.find('input[name="harga[]"]').prop('disabled', mode === 'delete')
       });
       // data.barang.forEach((item, i) => {
       //   const row = `

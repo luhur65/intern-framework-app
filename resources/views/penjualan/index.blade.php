@@ -107,6 +107,7 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-danger" data-dismiss="modal">Close</button>
           <button id="saveBtn" type="submit" class="btn btn-primary">Simpan</button>
+          <button type="button" class="btn btn-danger d-none" id="deleteBtn">Hapus</button>
         </div>
       </form>
       </div>
@@ -219,7 +220,7 @@
   const barangRow = tableBarang ? tableBarang.find('.barangRow') : null;
   const barangRowCount = tableBarang ? tableBarang.find('.barangRow').length : 0;
   const setDatePicker = {
-    dateFormat: 'dd-mm-yyyy',
+    dateFormat: 'dd-mm-yy',
     changeMonth: true,
     changeYear: true,
     yearRange: "1900:2099",
@@ -621,6 +622,37 @@
     cursor: "pointer",
   });
 
+  // tombol hapus
+  $("#jqGrid").jqGrid('navButtonAdd', '#jqGridPager', {
+    caption: ' Hapus',
+    buttonicon: 'fa-fw fa-trash-alt',
+    onClickButton: function () {
+
+      const selectedId = $('#jqGrid').jqGrid('getGridParam', 'selrow');
+      if (!selectedId) {
+        alert('Silakan pilih data yang ingin diedit');
+        return;
+      }
+
+      $.ajax({
+        url: `/penjualan/${selectedId}`,
+        method: 'GET',
+        success: function (res) {
+          openModal('delete', res);
+        },
+        error: function (err) {
+          alert('Gagal mengambil data');
+          console.error(err);
+        }
+      });
+
+    },
+    position: 'last',
+    title: 'Delete',
+    id: "DeleteHeader",
+    cursor: "pointer",
+  });
+
   // Simpan (Tambah/Edit)
   $('#saveBtn').on('click', function(e) {
     e.preventDefault(); // Hindari submit form default
@@ -690,6 +722,38 @@
         $('#formModal').modal('hide');
         // $('#jqGrid').trigger('reloadGrid');
         // alert('Data berhasil disimpan');
+
+        // Simpan id ke global
+        selectId = data.id;
+        page = data.page;
+
+        console.log("ID yang disimpan:", selectId);
+        console.log("Page tujuan:", page);
+
+        $('#jqGrid').setGridParam({
+          page: page
+        }).trigger('reloadGrid');
+      }
+    });
+  });
+
+  // Hapus (misal tombol hapus di modal)
+  $('#deleteBtn').on('click', function() {
+    const id = $('#formId').val();
+
+    const formData = {
+      _token: '{{ csrf_token() }}',
+      sortname: $('#jqGrid').jqGrid('getGridParam', 'sortname'),
+      sortorder: $('#jqGrid').jqGrid('getGridParam', 'sortorder'),
+      rows: parseInt($('#jqGrid').jqGrid('getGridParam', 'rowNum')),
+    }
+
+    $.ajax({
+      url: `/penjualan/${id}`,
+      type: 'DELETE',
+      data: formData,
+      success: function(data) {
+        $('#formModal').modal('hide');
 
         // Simpan id ke global
         selectId = data.id;

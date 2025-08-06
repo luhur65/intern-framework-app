@@ -17,6 +17,10 @@ class Penjualan extends Model
     // protected $primaryKey = 'id_penjualan';
     public $timestamps = false;
 
+    protected $casts = [
+        'tgl_bukti' => 'date', 
+    ];
+
     public function pelanggan()
     {
         return $this->belongsTo(Pelanggan::class, 'pelanggan_id');
