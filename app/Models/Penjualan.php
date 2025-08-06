@@ -48,9 +48,10 @@ class Penjualan extends Model
      * @param array $params
      * @return array
      */
-    public static function getGridMaster(array $params) 
+    public static function getGridMaster(array $params, $limitOn = true) 
     {
-        // Buat query dasar dengan Query Builder
+        
+
         $baseQuery = DB::table('penjualans')
             ->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id')
             ->select(
@@ -100,8 +101,16 @@ class Penjualan extends Model
 
         // --- Pagination ---
         $sidx = $params['sidx'] ?? 'penjualans.id'; // Default sort
-
         $sord = $params['sord'] ?? 'asc';
+
+        // Jika limitOn false, kita tidak akan menggunakan limit dan offset
+        if (!$limitOn) {
+            return $baseQuery
+                ->orderBy($sidx, $sord) 
+                ->pluck('penjualans.id')
+                ->toArray();
+        }
+
         $limit = (int)($params['limit'] ?? 10);
         $page = (int)($params['page'] ?? 1);
         $start = $params['start'] ?? (($page - 1) * $limit);
@@ -156,8 +165,58 @@ class Penjualan extends Model
             'total' => $total_pages,
             'records' => $count,
             'rows' => $rows->toArray(), // Konversi ke array
-            'query' => $baseQuery->toSql(), // Untuk debugging, bisa dihapus nanti
-            'bindings' => $baseQuery->getBindings(), // Untuk debugging, bisa dihapus
+            //'query' => $baseQuery->toSql(), // Untuk debugging, bisa dihapus nanti
+            //'bindings' => $baseQuery->getBindings(), // Untuk debugging, bisa dihapus
         ];
+    }
+
+
+    public static function getPenjualanPagination(array $params, $id = 0)
+    {
+        // Panggil fungsi getGridMaster untuk mendapatkan data 
+        $ids = self::getGridMaster($params, false);
+
+        // Cari posisi id
+        $rowIndex = array_search($id, $ids);
+
+        // var_dump($rowIndex);
+        $rowNumber = $rowIndex !== false ? $rowIndex + 1 : 1;
+        // $rowNumber = $rowIndex + 1;
+        $limit = isset($params['limit']) ? intval($params['limit']) : 10;
+        $page = ceil($rowNumber / $limit);
+
+        return [
+            "id" => $id,
+            "page" => $page,
+        ];
+        
+
+    }
+
+    public static function getIDTerdekat($params, $deletedId = 0)
+    {
+        // Panggil fungsi getGridMaster untuk mendapatkan data 
+        $ids = self::getGridMaster($params, false);
+
+        // Cari posisi ID yang dihapus
+        $posisiTerhapus = array_search($deletedId, $ids);
+
+        // Jika ID tidak ditemukan
+        if ($posisiTerhapus === false) {
+            return !empty($ids) && $ids[0] != $deletedId ? $ids[0] : (isset($ids[1]) ? $ids[1] : null);
+        }
+
+        // Hapus ID dari array dan re-index
+        unset($ids[$posisiTerhapus]);
+        $ids = array_values($ids);
+
+        // Cari ID terdekat
+        if (isset($ids[$posisiTerhapus])) {
+            return $ids[$posisiTerhapus]; // Posisi yang sama
+        } elseif ($posisiTerhapus > 0 && isset($ids[$posisiTerhapus - 1])) {
+            return $ids[$posisiTerhapus - 1]; // Posisi sebelumnya
+        } else {
+            return !empty($ids) ? $ids[0] : null; // Fallback ke pertama
+        }
     }
 }

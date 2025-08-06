@@ -211,7 +211,8 @@
 
   let modalMode = 'add';
   let dataBarang = [];
-  const selectId = null;
+  let selectId = null;
+  let page = 1;
   const detailGrid = "#detailItem";
   const masterGrid = "#jqGrid";
   const tableBarang = $('#tableBarang').length > 0 ? $('#tableBarang') : null;
@@ -667,7 +668,10 @@
       no_bukti: $('#no_bukti').val(),
       tgl_bukti: $('#tgl_bukti').val(),
       nama_pelanggan: $('#nama_pelanggan').val(),
-      barang: dataBarang
+      barang: dataBarang,
+      sortname: $('#jqGrid').jqGrid('getGridParam', 'sortname'),
+      sortorder: $('#jqGrid').jqGrid('getGridParam', 'sortorder'),
+      rows: parseInt($('#jqGrid').jqGrid('getGridParam', 'rowNum')),
     };
 
     let url = '/penjualan';
@@ -682,10 +686,21 @@
       url: url,
       type: type,
       data: formData,
-      success: function(res) {
+      success: function(data) {
         $('#formModal').modal('hide');
-        $('#jqGrid').trigger('reloadGrid');
-        alert('Data berhasil disimpan');
+        // $('#jqGrid').trigger('reloadGrid');
+        // alert('Data berhasil disimpan');
+
+        // Simpan id ke global
+        selectId = data.id;
+        page = data.page;
+
+        console.log("ID yang disimpan:", selectId);
+        console.log("Page tujuan:", page);
+
+        $('#jqGrid').setGridParam({
+          page: page
+        }).trigger('reloadGrid');
       }
     });
   });

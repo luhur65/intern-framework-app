@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Pelanggan;
 use App\Models\Penjualan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB as MySQLDB;
 
 class PenjualanController extends Controller
 {
@@ -41,7 +42,6 @@ class PenjualanController extends Controller
 
             $this->gridParams['filters'] = $this->filters;
         }
-
 
         // dd($this->gridParams);
 
@@ -82,6 +82,9 @@ class PenjualanController extends Controller
      */
     public function store(Request $request)
     {
+
+        // \dd($request->all());
+
         // Validasi input
         $request->validate([
             'no_bukti' => 'required|string|max:255',
@@ -91,13 +94,43 @@ class PenjualanController extends Controller
             'barang.*.nama_barang' => 'required|string|max:255',
             'barang.*.qty' => 'required|integer|min:1',
             'barang.*.harga' => 'required|numeric|min:0',
-            'barang.*.total' => 'required|numeric|min:0',
+            // 'barang.*.total' => 'required|numeric|min:0',
         ]);
 
         // Simpan data penjualan
-        // $penjualan = Penjualan::create($request->all());
+        MySQLDB::beginTransaction();
+        
+        try {
 
-        // return response()->json($penjualan, 201);
+            $penjualan = Penjualan::create([
+                'no_bukti'     => strtoupper($request->no_bukti),
+                'tgl_bukti'    => date('Y-m-d', strtotime($request->tgl_bukti)),
+                'pelanggan_id' => $request->nama_pelanggan,
+            ]);
+
+            foreach ($request->barang as $item) {
+                $penjualan->details()->create([
+                    'nama_barang' => strtoupper($item['nama_barang']),
+                    'qty'         => $item['qty'],
+                    'harga'       => $item['harga'],
+                ]);
+            }
+
+            MySQLDB::commit();
+
+            // Ambil dan ubah sord, sidx, dan limit
+            $this->gridParams['sidx'] = $request->sortname;
+            $this->gridParams['sord'] = $request->sortorder;
+            $this->gridParams['page'] = $request->rows;
+            $pageData = Penjualan::getPenjualanPagination($this->gridParams, $penjualan->id);
+            return response()->json($pageData);
+
+        } catch (\Exception $e) {
+
+            MySQLDB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
     }
 
     /**
