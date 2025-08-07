@@ -8,6 +8,8 @@ use App\Models\Pelanggan;
 use App\Models\Penjualan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 // use Illuminate\Support\Facades\DB as MySQLDB;
 
 class PenjualanController extends Controller
@@ -200,4 +202,102 @@ class PenjualanController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Menangani permintaan untuk mengekspor data ke berbagai format (Excel, PDF, dll).
+     *
+     * @param Request $request
+     * @param string $mode Format ekspor ('excel', 'pdf', dll).
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|void
+     */
+    public function export(Request $request, string $mode)
+    {
+        // 1. Ambil semua parameter filter dari request, sama seperti di grid
+        $params = $request->all();
+
+        // \dd($params);
+        
+        if ($mode === 'excel') {
+            $this->excel($params);
+
+        } else if ($mode === 'pdf') {
+            abort(501, 'Export PDF belum diimplementasikan.');
+
+        }
+        
+    }
+
+    public function excel($params)
+    {
+        // 2. Ambil data dari database MENGGUNAKAN LOGIKA FILTER YANG SAMA
+        // Kita akan buat metode baru di model untuk ini, agar tidak ada paginasi
+        $dataPenjualan = Penjualan::getDataForExport($params);
+
+        \dd($dataPenjualan);
+
+        // 3. Buat objek Spreadsheet baru
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Laporan Penjualan');
+
+        // 4. Tulis Header Tabel
+        $sheet->setCellValue('A1', 'No.');
+        $sheet->setCellValue('B1', 'No Bukti');
+        $sheet->setCellValue('C1', 'Tanggal Bukti');
+        $sheet->setCellValue('D1', 'Nama Pelanggan');
+        $sheet->setCellValue('E1', 'Nama Barang');
+        $sheet->setCellValue('F1', 'Qty');
+        $sheet->setCellValue('G1', 'Harga Satuan');
+        $sheet->setCellValue('H1', 'Total Harga');
+
+        // Beri style pada header
+        $headerStyle = [
+            'font' => ['bold' => true],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]],
+        ];
+        $sheet->getStyle('A1:H1')->applyFromArray($headerStyle);
+
+        // 5. Tulis Data ke dalam Sheet
+        $rowNumber = 2; // Mulai dari baris ke-2
+        $counter = 1;
+        foreach ($dataPenjualan as $penjualan) {
+            foreach ($penjualan->details as $index => $detail) {
+                if ($index === 0) {
+                    // Hanya tulis data master di baris pertama setiap transaksi
+                    $sheet->setCellValue('A' . $rowNumber, $counter);
+                    $sheet->setCellValue('B' . $rowNumber, $penjualan->no_bukti);
+                    $sheet->setCellValue('C' . $rowNumber, $penjualan->tgl_bukti->format('d-m-Y'));
+                    $sheet->setCellValue('D' . $rowNumber, $penjualan->pelanggan->nama_pelanggan ?? 'N/A');
+                }
+                // Tulis data detail untuk setiap baris
+                $sheet->setCellValue('E' . $rowNumber, $detail->nama_barang);
+                $sheet->setCellValue('F' . $rowNumber, $detail->qty);
+                $sheet->setCellValue('G' . $rowNumber, $detail->harga);
+                $sheet->setCellValue('H' . $rowNumber, $detail->qty * $detail->harga);
+
+                $rowNumber++;
+            }
+            $counter++;
+        }
+
+        // 6. Atur lebar kolom secara otomatis
+        foreach (range('A', 'H') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        // 7. Siapkan Writer dan kirim file ke browser
+        $writer = new Xlsx($spreadsheet);
+        $fileName = 'laporan-penjualan-' . date('Y-m-d') . '.xlsx';
+
+        // Set header HTTP untuk memicu unduhan
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+
+        // Tulis file ke output PHP
+        $writer->save('php://output');
+        exit();
+    }
+
 }

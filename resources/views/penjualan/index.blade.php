@@ -18,7 +18,7 @@
     <div id="detailItemPager"></div>
   </div>
 
-  <!-- Modal -->
+  <!-- Modal Form Penjualan -->
   <div class="modal fade" id="formModal" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="formModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content">
@@ -32,7 +32,7 @@
         </div>
         <div class="modal-body">
           <div class="modal-body">
-            <form id="penjualanForm" method="POST" action="{{ route('penjualan.store') }}">
+            <form id="penjualanForm">
               {{-- <form id="penjualanForm" method="POST" action="{{ url('penjualan') }}"> --}}
               @csrf
               {{-- <input type="hidden" name="_method" value="PUT"> --}}
@@ -65,11 +65,13 @@
                   <span class="text-danger error-text nama_pelanggan_error"></span>
                 </div>
               </div>
-              {{-- <input type="hidden" name="id" id="formId">
-              <div class="form-group">
-                <label for="no_bukti">No Bukti</label>
-                <input type="text" class="form-control" id="no_bukti" name="no_bukti" required>
+              <div class="form-group row">
+                <label for="totalSemuaBarang" class="col-sm-2 col-form-label">Harga Total</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="totalSemuaBarang" required readonly>
+                </div>
               </div>
+              {{-- <input type="hidden" name="id" id="formId">
               <div class="form-group">
                 <label for="tgl_bukti">Tanggal Bukti</label>
                 <input type="date" class="form-control" id="tgl_bukti" name="tgl_bukti" required>
@@ -98,9 +100,17 @@
                         <input type="text" name="nama_barang[]" class="form-control namabarang" required>
                         <span class="text-danger error-text nama_barang_error"></span>
                       </td>
-                      <td><input type="text" name="qty[]" class="form-control qty" min="1" required></td>
-                      <td><input type="text" name="harga[]" class="form-control harga" min="0" required></td>
-                      <td><input type="text" name="total[]" class="form-control total" readonly></td>
+                      <td>
+                        <input type="text" name="qty[]" class="form-control qty" min="1" required>
+                        <span class="text-danger error-text qty_error"></span>
+                      </td>
+                      <td>
+                        <input type="text" name="harga[]" class="form-control harga" min="1" required>
+                        <span class="text-danger error-text harga_error"></span>
+                      </td>
+                      <td>
+                        <input type="text" name="total[]" class="form-control total" readonly>
+                      </td>
                       <td>
                         <button type="button" class="btn btn-danger btn-sm removeBarangRow">-</button>
                       </td>
@@ -114,6 +124,49 @@
           <button type="button" class="btn btn-outline-danger" data-dismiss="modal">Close</button>
           <button id="saveBtn" type="submit" class="btn btn-primary">Simpan</button>
           <button type="button" class="btn btn-danger d-none" id="deleteBtn">Hapus</button>
+        </div>
+      </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Export -->
+  <div class="modal fade" id="exportForm" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="exportFormLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exportFormLabel">
+            Export Excel
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-body">
+            <form id="export-form">
+              @csrf
+
+              <div class="form-group row">
+                <label for="start_range" class="col-sm-4 col-form-label">Data Ke </label>
+                <div class="col-sm-8">
+                  <input type="text" class="form-control" id="start_range" name="start_range" required autocomplete="off" data-inputmask="'alias': 'integer', 'placeholder': '', 'rightAlign': false, 'showMaskOnHover': false, 'showMaskOnFocus': false" inputmode="number">
+                  <span class="text-danger error-text start_range_error"></span>
+                </div>
+              </div>
+              <div class="form-group row">
+                <label for="end_range" class="col-sm-4 col-form-label">S/D Ke</label>
+                <div class="col-sm-8">
+                  <input type="text" class="form-control" id="end_range" name="end_range" required autocomplete="off" data-inputmask="'alias': 'integer', 'placeholder': '', 'rightAlign': false, 'showMaskOnHover': false, 'showMaskOnFocus': false" inputmode="number">
+                  <span class="text-danger error-text end_range_error"></span>
+                </div>
+              </div>
+              
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-danger" data-dismiss="modal">Close</button>
+          <button id="confirmExportBtn" type="submit" class="btn btn-primary">Simpan</button>
         </div>
       </form>
       </div>
@@ -250,13 +303,17 @@
 
   // Select2
   $(".js-example-placeholder-single").select2({
-    placeholder: "Pilih Pelanggan",
+    placeholder: "PILIH PELANGGAN",
     allowClear: true,
     dropdownParent: $('#formModal'),
   });
 
   // Datepicker
   $('#tgl_bukti').datepicker(setDatePicker);
+
+  // Total
+  const totalHarga = document.querySelector('#totalSemuaBarang');
+  const NumericTotal = new AutoNumeric(totalHarga, setMoneyNumeric);
 
   // Validate Tgl Bukti on input change
   // $(document).on('change', '#tgl_bukti', function () {
@@ -384,7 +441,7 @@
 
       // console.log(response);
 
-      console.log(selectId);
+      // console.log(selectId);
       if (selectId) {
         selectRow(selectId);
         // $("#jqGrid").jqGrid('setSelection', selectId);
@@ -470,7 +527,7 @@
 
   $('#gsearch_JqGrid').on('keyup', function () {
     let text = $(this).val();
-    
+
     $('#gs_no_bukti').val('');
     $('#gs_tgl_bukti').val('');
     $('#gs_nama_pelanggan').val('');
@@ -548,18 +605,19 @@
       // Event input qty dan harga
       $qtyInput.on('input', function () {
         updateTotalRow($row);
-        // updateGrandTotal();
+        updateGrandTotal();
       });
 
       $hargaInput.on('input', function () {
         const value = anHarga.getNumber();
         anHarga.set(value); // reformat langsung
         updateTotalRow($row);
-        // updateGrandTotal();
+        updateGrandTotal();
       });
 
       // Hitung total pertama kali
       updateTotalRow($row);
+
     });
   }
 
@@ -567,6 +625,7 @@
   // Event untuk menghitung total saat qty atau harga berubah
   $(document).on('input', 'input[name="qty[]"], input[name="harga[]"]', function() {
     calculateTotal();
+    updateGrandTotal();
   });
 
   // Initialize auto numeric
@@ -618,6 +677,7 @@
         method: 'GET',
         success: function (res) {
           openModal('edit', res);
+          
         },
         error: function (err) {
           alert('Gagal mengambil data');
@@ -740,6 +800,12 @@
       url: url,
       type: type,
       data: formData,
+      beforeSend: function() {
+          // Hapus SEMUA status error dari percobaan sebelumnya.
+          // Ini akan memastikan field yang sudah valid tidak lagi berwarna merah.
+          $('.error-text').text('');
+          $('.form-control').removeClass('is-invalid');
+      },
       success: function(data) {
         $('#formModal').modal('hide');
         // $('#jqGrid').trigger('reloadGrid');
@@ -816,15 +882,33 @@
   $('#deleteBtn').on('click', function() {
     const id = $('#formId').val();
 
+    let postData = $('#jqGrid').jqGrid('getGridParam', 'postData');
+    let filters = postData.filters;
+    let globalSearchKey = postData.global_search;
+
     const formData = {
       _token: '{{ csrf_token() }}',
       sortname: $('#jqGrid').jqGrid('getGridParam', 'sortname'),
       sortorder: $('#jqGrid').jqGrid('getGridParam', 'sortorder'),
       rows: parseInt($('#jqGrid').jqGrid('getGridParam', 'rowNum')),
+      sortname: $('#jqGrid').jqGrid('getGridParam', 'sortname'),
+      sortorder: $('#jqGrid').jqGrid('getGridParam', 'sortorder'),
+      rows: parseInt($('#jqGrid').jqGrid('getGridParam', 'rowNum')),
+    }
+
+    let url = `/penjualan/${id}`;
+
+    if (filters) {
+      formData.filters = filters;
+      url += '?_search=true'
+    }
+
+    if (globalSearchKey) {
+      formData.global_search = globalSearchKey;
     }
 
     $.ajax({
-      url: `/penjualan/${id}`,
+      url: url,
       type: 'DELETE',
       data: formData,
       success: function(data) {
@@ -842,6 +926,59 @@
         }).trigger('reloadGrid');
       }
     });
+  });
+
+  // tombol export data ke excel
+  $("#jqGrid").jqGrid('navButtonAdd', '#jqGridPager', {
+    caption: 'Excel',
+    buttonicon: 'fa-fw fa-file',
+    onClickButton: function () {
+      exportModal('excel');
+    },
+    position: 'last',
+    title: 'Export Data',
+    id: "ExportHeader",
+    cursor: "pointer",
+  });
+
+  // Tombol export PDF langsung
+  $("#jqGrid").jqGrid('navButtonAdd', '#jqGridPager', {
+    caption: 'PDF',
+    buttonicon: 'fa-fw fa-print',
+    onClickButton: function () {
+      exportModal('pdf');
+    },
+    position: 'last',
+    title: 'Export PDF',
+    id: "PDFHeader",
+    cursor: "pointer",
+  });
+
+  $('#confirmExportBtn').on('click', function(e) {
+    e.preventDefault();
+
+    const mode = $(this).data('mode');
+    if (!mode) {
+        alert('Mode export tidak ditemukan!');
+        return;
+    }
+
+    // 1. Ambil semua parameter filter dan sorting dari grid
+    const postData = $('#jqGrid').jqGrid('getGridParam', 'postData');
+
+    // Kirim data start_range dan end_range
+    postData.start_range = $('#start_range').val(); 
+    postData.end_range = $('#end_range').val();
+    
+    // Ini akan mengubah { _search: false, sidx: 'id', ... } menjadi "_search=false&sidx=id&..."
+    const queryString = $.param(postData);
+    const exportUrl = `/penjualan/export/${mode}?${queryString}`;
+    
+    // 3. Buka URL ekspor di tab baru dengan query string yang sudah dibuat
+    window.open(exportUrl, '_blank');
+    
+    // 4. Tutup modal setelah proses dimulai
+    $('#exportForm').modal('hide');
   });
   
   // $('#jqGrid').on('mouseenter', function() {
@@ -961,6 +1098,7 @@
   $(document).on('click', '.removeBarangRow', function() {
     if (tableBarang.find('tbody tr').length > 1) {
       $(this).closest('tr').remove();
+      updateGrandTotal();
     } 
   });
 
@@ -970,6 +1108,13 @@
     tableBarang.find('tbody').html(HTMLBarisBarangBaru()); // Reset tabel barang
     resetFormAndValidation(); // Bersihkan validasi
   });
+
+  // 
+  // $('#formModal').on('shown.bs.modal', function (e) {
+  //   updateGrandTotal()
+  //   // Fokus ke input misalnya
+  //   $('#no_bukti').focus();
+  // });
 
   </script>
 @endpush

@@ -19,3 +19,6 @@ Route::resource('penjualan', PenjualanController::class)->except(['index']);
 //     ->name('penjualan.detail.index');
 Route::get('penjualan/{penjualanId?}/detail', [PenjualanDetailController::class, 'getDetail'])
     ->name('penjualan.detail.getDetail'); // arti (penjualanId?) adalah opsional, bisa diisi atau tidak
+
+// Penjualan Export
+Route::get('penjualan/export/{mode}', [PenjualanController::class, 'export'])->name('penjualan.export');

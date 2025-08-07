@@ -127,6 +127,22 @@ class Penjualan extends Model
         if ($page > $total_pages) $page = $total_pages;
         $start = max(0, ($page - 1) * $limit); // Recalculate start
 
+        // Untuk export data
+        if (isset($params['start_range']) && isset($params['end_range'])) {
+
+            $startRange = $params['start_range'];
+            $endRange = $params['end_range'];
+
+            if ($startRange > 0 && $endRange > 0) {
+                $offset = $startRange - 1;
+                $countToFetch = $endRange - $startRange + 1;
+                // $limitClause = "LIMIT $offset, $countToFetch";
+            }
+
+            return $baseQuery->orderBy($sidx, $sord)->offset($countToFetch)->limit($offset)->get();
+
+        }
+
         // Dapatkan data dengan limit dan offset
         $data = $baseQuery->orderBy($sidx, $sord)
             ->offset($start)
@@ -197,7 +213,7 @@ class Penjualan extends Model
 
     }
 
-    public static function getIDTerdekat($params, $deletedId = 0)
+    public static function getIDTerdekat(array $params, $deletedId = 0)
     {
         // Panggil fungsi getGridMaster untuk mendapatkan data 
         $ids = self::getGridMaster($params, false);
@@ -222,5 +238,12 @@ class Penjualan extends Model
         } else {
             return !empty($ids) ? $ids[0] : null; // Fallback ke pertama
         }
+    }
+
+    public static function getDataForExport(array $params)
+    {
+        $data = self::getGridMaster($params);
+        return $data;
+        // \dd($data);
     }
 }

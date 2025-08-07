@@ -74,7 +74,7 @@ function resetSearch(gridSelector) {
     $('#gs_qty').val('');
     $('#gs_harga').val('');
     $('#gs_total').val('');
-    
+
   } else {
     $('#gs_no_bukti').val('');
     $('#gs_tgl_bukti').val('');
@@ -201,7 +201,7 @@ function createGlobalSearchInput(gridSelector) {
     </div>`
   );
 
-  const $inputElement = globalSearchInput.find(`input#${inputID}`); 
+  const $inputElement = globalSearchInput.find(`input#${inputID}`);
 
   $inputElement.on('keyup', function (e) {
     resetSearch(gridSelector);
@@ -327,7 +327,7 @@ function detailTable(id) {
 
   });
 
-  
+
   // Untuk detail grid (pastikan element ini ada di DOM Anda)
   $('#gsh_detailItem_rn div').empty(); // Kosongkan elemen sebelum menambahkan tombol baru
   const detailButton = createResetButtonElement('detail'); // Sesuaikan selector
@@ -348,7 +348,7 @@ function detailTable(id) {
     // Global Search untuk master
     // const globalSearchInput = createGlobalSearchInput('#jqGrid');
     // $('.ui-jqgrid-titlebar').after(createGlobalSearchInput('#jqGrid'));
-  
+
     $('#gsearch_detailItem').on('keyup', function () {
       let text = $(this).val();
 
@@ -356,9 +356,9 @@ function detailTable(id) {
       $('#gs_qty').val('');
       $('#gs_harga').val('');
       $('#gs_total').val('');
-  
+
       // resetToolbarSearch('#jqGrid');
-  
+
       //ada banyak parameter grid, salah satunya postData. untuk nngeliat bisa bikin getGridParam
       //untuk nambahin isi dari parameternya bisa dibuat pake setGridParam
       //jadi untuk search, set dulu data baru untuk param postData. lalu di trigger dengan reloadGrid
@@ -373,17 +373,17 @@ function detailTable(id) {
           id_penjualan: $(this).data('selectid') // Menggunakan data-selectid untuk filter
         }
       }).trigger('reloadGrid')
-  
+
     });
 
   } else {
     // Jika .length > 0 (elemen sudah ada), kita tidak melakukan apa-apa.
     // console.log("Search bar detail sudah ada, tidak perlu ditambah lagi.");
   }
-  
 
-  
-  
+
+
+
 }
 // End of detailTable function
 
@@ -441,39 +441,19 @@ function openModal(mode, data = {}) {
         $row.find('input[name="qty[]"]').prop('disabled', mode === 'delete')
         $row.find('input[name="harga[]"]').prop('disabled', mode === 'delete')
       });
-      // data.barang.forEach((item, i) => {
-      //   const row = `
-      //   <tr class="barangRow">
-      //     <td><input type="text" name="nama_barang[]" class="form-control" value="${item.nama_barang}"></td>
-      //     <td><input type="text" name="qty[]" class="form-control qty" value="${item.qty}"></td>
-      //     <td><input type="text" name="harga[]" class="form-control harga" value="${item.harga}"></td>
-      //     <td><input type="text" name="total[]" class="form-control total" value="${item.total}" readonly></td>
-      //   </tr>
-      // `;
-      //   $('#tableBarang tbody').append(row);
-      // });
+      
     }
-    // updateGrandTotal();
-    // $('#tableBarang').find('.barangRow').each(function () {
-    //   initAutoNumericRow($(this));
-    // });
-    // $('#tableBarang').find('.removeBarangRow').off('click').on('click', function () {
-    //   $(this).closest('tr').remove();
-    //   updateGrandTotal();
-    // });
-    // $('#tableBarang').find('.qty, .harga').off('input').on('input', function () {
-    //   const $row = $(this).closest('tr');
-    //   updateTotalRow($row);
-    //   updateGrandTotal();
-    // });
-    // $('#tableBarang').find('.qty, .harga').each(function () {
-    //   const $row = $(this).closest('tr');
-    //   initAutoNumericRow($row);
-    // });
 
   } else {
     $('#no_bukti, #tgl_bukti, #nama_pelanggan').prop('disabled', false);
   }
+  
+  $('#formModal').on('shown.bs.modal', function (e) {
+    updateGrandTotal();
+    // Fokus ke input misalnya
+    $('#no_bukti').focus();
+  });
+
   $('#formModal').modal('show');
 }
 
@@ -481,10 +461,21 @@ function HTMLBarisBarangBaru() {
   // Template untuk baris barang baru
   return `
   <tr class="barangRow">
-    <td><input type="text" name="nama_barang[]" class="form-control namabarang" required></td>
-    <td><input type="text" name="qty[]" class="form-control qty" min="1" required></td>
-    <td><input type="text" name="harga[]" class="form-control harga" min="0" required></td>
-    <td><input type="text" name="total[]" class="form-control total" readonly></td>
+    <td>
+      <input type="text" name="nama_barang[]" class="form-control namabarang" required>
+      <span class="text-danger error-text nama_barang_error"></span>
+    </td>
+    <td>
+      <input type="text" name="qty[]" class="form-control qty" min="1" required>
+      <span class="text-danger error-text qty_error"></span>
+    </td>
+    <td>
+      <input type="text" name="harga[]" class="form-control harga" min="1" required>
+      <span class="text-danger error-text harga_error"></span>
+    </td>
+    <td>
+      <input type="text" name="total[]" class="form-control total" readonly>
+    </td>
     <td>
       <button type="button" class="btn btn-danger btn-sm removeBarangRow">-</button>
     </td>
@@ -530,7 +521,7 @@ function updateGrandTotal() {
     sum += anT ? anT.getNumber() : 0;
   });
 
-  // NumericTotal.set(sum);
+  NumericTotal.set(sum);
 }
 
 
@@ -548,5 +539,13 @@ function resetFormAndValidation() {
   // Hapus semua pesan error dan kelas 'is-invalid'
   $('.error-text').text('');
   $('.form-control').removeClass('is-invalid');
+
+}
+
+function exportModal(mode) {
+
+  $('#confirmExportBtn').data('mode', mode); // simpan data mode;
+  $('#exportFormLabel').text(mode === 'excel' ? 'Export Excel' : 'Export PDF');
+  $('#exportForm').modal('show');
 
 }

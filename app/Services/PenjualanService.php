@@ -56,13 +56,17 @@ class PenjualanService implements PenjualanServiceInterface
 
     // 2. Siapkan array barang dengan menghitung totalnya.
     $barangDetails = [];
+    // $totalKeseluruhan = 0;
     foreach ($penjualan->details as $detail) {
+      // $subtotal = $detail->qty * $detail->harga;
       $barangDetails[] = [
         'nama_barang' => $detail->nama_barang,
         'qty'         => $detail->qty,
         'harga'       => $detail->harga,
-        // 'total'       => $detail->qty * $detail->harga, // Hitung total di sini
+        // 'grandtotal'  => $detail->qty * $detail->harga, // Hitung total di sini
       ];
+
+      // $totalKeseluruhan += $subtotal;
     }
 
     // 3. Susun hasil akhir sesuai struktur yang diminta.
@@ -73,6 +77,7 @@ class PenjualanService implements PenjualanServiceInterface
       'tgl_bukti'      => $penjualan->tgl_bukti->format('d-m-Y'),
       // Ambil hanya ID pelanggan sesuai contoh
       'nama_pelanggan' => (string) $penjualan->pelanggan_id,
+      // 'grandTotal'     => $totalKeseluruhan, // total semua barang
       'barang'         => $barangDetails,
     ];
   }
