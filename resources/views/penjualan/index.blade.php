@@ -41,6 +41,7 @@
                 <label for="no_bukti" class="col-sm-2 col-form-label">No Bukti</label>
                 <div class="col-sm-10">
                   <input type="text" class="form-control" id="no_bukti" name="no_bukti" required autocomplete="off" data-inputmask="'mask': 'AAA99', 'greedy': 'false', 'placeholder': '', 'showMaskOnHover': false, 'showMaskOnFocus': false" inputmode="text">
+                  <span class="text-danger error-text no_bukti_error"></span>
                 </div>
               </div>
 
@@ -48,6 +49,7 @@
                 <label for="tgl_bukti" class="col-sm-2 col-form-label">Tanggal Bukti</label>
                 <div class="col-sm-10">
                   <input type="text" class="form-control" id="tgl_bukti" name="tgl_bukti" required data-inputmask="'alias': 'datetime','inputFormat': 'dd-mm-yyyy'" inputmode="numeric">
+                  <span class="text-danger error-text tgl_bukti_error"></span>
                 </div>
               </div>
 
@@ -60,6 +62,7 @@
                       <option value="{{ $pelanggan->id }}">{{ $pelanggan->nama_pelanggan }}</option>
                     @endforeach
                   </select>
+                  <span class="text-danger error-text nama_pelanggan_error"></span>
                 </div>
               </div>
               {{-- <input type="hidden" name="id" id="formId">
@@ -91,7 +94,10 @@
                   </thead>
                   <tbody>
                     <tr class="barangRow">
-                      <td><input type="text" name="nama_barang[]" class="form-control" required></td>
+                      <td>
+                        <input type="text" name="nama_barang[]" class="form-control namabarang" required>
+                        <span class="text-danger error-text nama_barang_error"></span>
+                      </td>
                       <td><input type="text" name="qty[]" class="form-control qty" min="1" required></td>
                       <td><input type="text" name="harga[]" class="form-control harga" min="0" required></td>
                       <td><input type="text" name="total[]" class="form-control total" readonly></td>
@@ -718,6 +724,13 @@
       url: url,
       type: type,
       data: formData,
+      // SEBELUM mengirim, bersihkan semua pesan error lama
+      beforeSend: function() {
+          // Hapus teks dari semua elemen error
+          $('.error-text').text('');
+          // Hapus kelas error dari semua input (jika ada)
+          $('.form-control').removeClass('is-invalid');
+      },
       success: function(data) {
         $('#formModal').modal('hide');
         // $('#jqGrid').trigger('reloadGrid');
@@ -733,7 +746,60 @@
         $('#jqGrid').setGridParam({
           page: page
         }).trigger('reloadGrid');
-      }
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+
+        if (jqXHR.status === 422) {
+            // Ambil objek 'errors' dari respons JSON
+            const errors = jqXHR.responseJSON.errors;
+            
+            // Tampilkan pesan error di tempat yang tepat
+            $.each(errors, function(key, value) {
+                const errorMessage = value[0];
+                
+                // Cek apakah ini error untuk array 'barang'
+                if (key.startsWith('barang.')) {
+                    // Debug
+                    // console.group("Debugging Error untuk key: " + key);
+
+                    // Pecah kuncinya: "barang.0.qty" -> ["barang", "0", "qty"]
+                    const parts = key.split('.');
+                    const index = parts[1]; // Indeks baris, contoh: 0
+                    const fieldName = parts[2]; // Nama field, contoh: "qty"
+                    // console.log("Mencari input ke-" + index + " dengan nama '" + fieldName + "[]'");
+
+                    // cari semua input dengan nama yang cocok
+                    const allInputs = $('input[name="' + fieldName + '[]"]');
+                    // console.log("Ditemukan total " + allInputs.length + " input dengan nama '" + fieldName + "[]'");
+
+                    // Ambil input yang spesifik menggunakan indeksnya
+                    const inputField = allInputs.eq(index);
+                    // console.log("Input spesifik ditemukan:", inputField.length > 0 ? "Ya" : "Tidak", inputField);
+
+                    if (inputField.length > 0) {
+                        // Tampilkan error di span yang ada di sel yang sama
+                        const errorSpan = inputField.closest('td').find('.error-text');
+                        // console.log("Span Error ditemukan:", errorSpan.length > 0 ? "Ya" : "Tidak", errorSpan);
+                        errorSpan.text(errorMessage);
+                        inputField.addClass('is-invalid');
+                    }
+                    // console.groupEnd();
+                    
+
+                } else {
+                    // Logika lama untuk field non-array (no_bukti, dll)
+                    const errorClass = key.replace(/\./g, '_');
+                    $('.' + errorClass + '_error').text(errorMessage);
+                    $('#' + key).addClass('is-invalid');
+                    // console.log("Error untuk field " + key + ": " + errorMessage);
+                }
+            });
+
+        } else {
+            // Untuk error lain (500, 404, dll)
+            alert('Terjadi kesalahan server: ' + (jqXHR.responseJSON.error || errorThrown));
+        }
+        }
     });
   });
 
@@ -892,10 +958,8 @@
   // Reset form ketika modal ditutup
   $('#formModal').on('hidden.bs.modal', function () {
     modalMode = 'add'; // Set mode ke tambah
-    $('#penjualanForm')[0].reset(); // Reset form
-    $('#formId').val(''); // Kosongkan ID form
-    $('#nama_pelanggan').val('0').trigger('change'); // Reset select2
     tableBarang.find('tbody').html(HTMLBarisBarangBaru()); // Reset tabel barang
+    resetFormAndValidation(); // Bersihkan validasi
   });
 
   </script>

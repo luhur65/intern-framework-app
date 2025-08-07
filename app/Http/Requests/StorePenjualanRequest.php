@@ -29,7 +29,7 @@ class StorePenjualanRequest extends FormRequest
             'barang' => 'required|array',
             'barang.*.nama_barang' => 'required|string|max:255',
             'barang.*.qty' => 'required|integer|min:1',
-            'barang.*.harga' => 'required|numeric|min:0',
+            'barang.*.harga' => 'required|numeric|min:1',
         ];
     }
 }

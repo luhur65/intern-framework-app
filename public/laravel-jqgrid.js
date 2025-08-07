@@ -476,7 +476,7 @@ function HTMLBarisBarangBaru() {
   // Template untuk baris barang baru
   return `
   <tr class="barangRow">
-    <td><input type="text" name="nama_barang[]" class="form-control" required></td>
+    <td><input type="text" name="nama_barang[]" class="form-control namabarang" required></td>
     <td><input type="text" name="qty[]" class="form-control qty" min="1" required></td>
     <td><input type="text" name="harga[]" class="form-control harga" min="0" required></td>
     <td><input type="text" name="total[]" class="form-control total" readonly></td>
@@ -526,4 +526,22 @@ function updateGrandTotal() {
   });
 
   // NumericTotal.set(sum);
+}
+
+
+function resetFormAndValidation() {
+
+  $('#penjualanForm')[0].reset(); // Reset form
+  $('#formId').val(''); // Kosongkan ID form
+  $('#nama_pelanggan').val('0').trigger('change'); // Reset select2
+
+  // Hapus semua baris barang kecuali yang pertama (template)
+  $('#tabelBarang tbody tr.barangRow:not(:first)').remove();
+  // Kosongkan juga input di baris pertama
+  $('#tabelBarang tbody tr.barangRow:first').find('input').val('');
+
+  // Hapus semua pesan error dan kelas 'is-invalid'
+  $('.error-text').text('');
+  $('.form-control').removeClass('is-invalid');
+  
 }
