@@ -351,6 +351,11 @@ function detailTable(id) {
   
     $('#gsearch_detailItem').on('keyup', function () {
       let text = $(this).val();
+
+      $('#gs_nama_barang').val('');
+      $('#gs_qty').val('');
+      $('#gs_harga').val('');
+      $('#gs_total').val('');
   
       // resetToolbarSearch('#jqGrid');
   
@@ -543,5 +548,5 @@ function resetFormAndValidation() {
   // Hapus semua pesan error dan kelas 'is-invalid'
   $('.error-text').text('');
   $('.form-control').removeClass('is-invalid');
-  
+
 }

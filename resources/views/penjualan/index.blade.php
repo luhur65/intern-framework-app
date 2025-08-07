@@ -470,6 +470,10 @@
 
   $('#gsearch_JqGrid').on('keyup', function () {
     let text = $(this).val();
+    
+    $('#gs_no_bukti').val('');
+    $('#gs_tgl_bukti').val('');
+    $('#gs_nama_pelanggan').val('');
     // console.log("text: ", text);
 
     // ga perlu reset toolbar search, karena sudah di reset di beforeSearch
@@ -666,6 +670,9 @@
     let dataBarang = []; // Reset array setiap klik
 
     const id = $('#formId').val();
+    let postData = $('#jqGrid').jqGrid('getGridParam', 'postData');
+    let filters = postData.filters;
+    let globalSearchKey = postData.global_search;
 
     if (modalMode === 'edit' && !id) {
       alert('ID tidak ditemukan. Pastikan Anda memilih data yang akan diedit.');
@@ -714,23 +721,25 @@
 
     let url = '/penjualan';
     let type = 'POST';
-
+    
     if (modalMode === 'edit') {
       url = `/penjualan/${id}`;
       type = 'PUT';
+    }
+
+    if (filters) {
+      formData.filters = filters;
+      url += '?_search=true'
+    }
+
+    if (globalSearchKey) {
+      formData.global_search = globalSearchKey;
     }
 
     $.ajax({
       url: url,
       type: type,
       data: formData,
-      // SEBELUM mengirim, bersihkan semua pesan error lama
-      beforeSend: function() {
-          // Hapus teks dari semua elemen error
-          $('.error-text').text('');
-          // Hapus kelas error dari semua input (jika ada)
-          $('.form-control').removeClass('is-invalid');
-      },
       success: function(data) {
         $('#formModal').modal('hide');
         // $('#jqGrid').trigger('reloadGrid');

@@ -16,7 +16,6 @@ class PenjualanController extends Controller
     protected $gridParams = [];
     protected $filters = [];
 
-
     /**
      * Constructor ini SANGAT PENTING.
      * Ia akan otomatis dijalankan oleh Laravel untuk "menyuntikkan"
