@@ -84,6 +84,14 @@ class Penjualan extends Model
             $filters = $params['filters'] ?? [];
             // Asumsi $filters adalah array PHP, bukan JSON string
             if (!empty($filters)) {
+
+                // Jika filter dari url/get
+                if (is_string($params['filters'])) {
+                    $filtersJSON = \json_decode($params['filters'], true);
+                    $filters = $filtersJSON['rules'];
+                }
+
+                // $filters = json_decode($params['filters']);
                 $baseQuery->where(function ($q) use ($filters) {
                     foreach ($filters as $filter) {
                         $field = $filter['field'] ?? null;
