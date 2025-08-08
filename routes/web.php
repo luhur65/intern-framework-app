@@ -21,4 +21,6 @@ Route::get('penjualan/{penjualanId?}/detail', [PenjualanDetailController::class,
     ->name('penjualan.detail.getDetail'); // arti (penjualanId?) adalah opsional, bisa diisi atau tidak
 
 // Penjualan Export
-Route::get('penjualan/export/{mode}', [PenjualanController::class, 'export'])->name('penjualan.export');
+// Route::post('/penjualan/export/validasi', [PenjualanController::class, 'validateExport'])->name('penjualan.export.validate');
+Route::post('penjualan/export/{mode}', [PenjualanController::class, 'export'])->name('penjualan.export');
+Route::get('/penjualan/report/viewpdf', [PenjualanController::class, 'showPdfReport'])->name('penjualan.report.view');

@@ -136,10 +136,17 @@ class Penjualan extends Model
             if ($startRange > 0 && $endRange > 0) {
                 $offset = $startRange - 1;
                 $countToFetch = $endRange - $startRange + 1;
-                // $limitClause = "LIMIT $offset, $countToFetch";
-            }
 
-            return $baseQuery->orderBy($sidx, $sord)->offset($countToFetch)->limit($offset)->get();
+                // offset() dulu untuk melewati, baru limit() untuk mengambil
+                // return $baseQuery->orderBy($sidx, $sord)->offset($offset)->limit($countToFetch)->get();
+                return self::with(['pelanggan', 'details']) // <-- Muat relasi
+                    ->orderBy($sidx, $sord)
+                    ->offset($offset)
+                    ->limit($countToFetch)
+                    ->get();
+
+                // \dd($data);
+            }
 
         }
 
@@ -242,8 +249,8 @@ class Penjualan extends Model
 
     public static function getDataForExport(array $params)
     {
-        $data = self::getGridMaster($params);
-        return $data;
+        return self::getGridMaster($params);
+        // return $data;
         // \dd($data);
     }
 }

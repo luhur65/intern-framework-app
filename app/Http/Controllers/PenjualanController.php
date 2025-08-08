@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Exception;
 // use Illuminate\Support\Facades\DB as MySQLDB;
 
 class PenjualanController extends Controller
@@ -210,10 +211,11 @@ class PenjualanController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function validateExport(Request $request)
+    private function validateExport(Request $request)
     {
         // Hitung total record berdasarkan filter yang dikirim untuk aturan 'max'
-        $totalRecords = Penjualan::getDataForExport($request->all())->count();
+        // $totalRecords = Penjualan::getDataForExport($request->all())->count();
+        $totalRecords = $request->input('record', 0);
 
         // Terapkan aturan validasi
         $validator = Validator::make($request->all(), [
@@ -234,7 +236,8 @@ class PenjualanController extends Controller
         }
 
         // Jika berhasil, kirim respons sukses
-        return response()->json(['message' => 'Validasi berhasil!']);
+        // return response()->json(['message' => 'Validasi berhasil!']);
+        return true;
     }
 
     /**
@@ -246,28 +249,59 @@ class PenjualanController extends Controller
      */
     public function export(Request $request, string $mode)
     {
-        // 1. Ambil semua parameter filter dari request, sama seperti di grid
-        $params = $request->all();
+        
+        // parameter record dari request, sama seperti di grid
+        $totalRecords = $request->json('record', 0);
+        // \dd($request->json()->all());
+        // \dd($totalRecords);
+
+        // Terapkan aturan validasi
+        $validator = Validator::make($request->json()->all(), [
+            'start_range' => ['required', 'integer', 'min:1', 'lte:end_range'],
+            'end_range'   => ['required', 'integer', 'min:1', 'max:' . $totalRecords],
+        ], [
+            // Pesan error kustom
+            'start_range.required' => 'Kolom Awal wajib diisi.',
+            'start_range.min'      => 'Harus dimulai dari angka 1 atau lebih.',
+            'start_range.lte'      => 'Nilai awal tidak boleh lebih besar dari akhir.',
+            'end_range.required'   => 'Kolom Akhir wajib diisi.',
+            'end_range.max'        => 'Maksimal hanya sampai ' . $totalRecords . ' data.',
+        ]);
+
+        // Jika validasi gagal, kembalikan respons JSON 422
+        if ($validator->fails()) {
+
+            return response()->json(['errors' => $validator->errors()], 422);
+            
+            // return response()->json(['errors' => $validator->errors()], 422)
+            //     ->withHeaders([
+            //         'X-Error-Type' => 'Validation',
+            //         'Content-Type' => 'application/json',
+            //     ]);
+        }
 
         // \dd($params);
-        
+
+        $params = $request->json()->all();
+
         if ($mode === 'excel') {
             return $this->excel($params);
 
         } else if ($mode === 'pdf') {
-            abort(501, 'Export PDF belum diimplementasikan.');
+            return $this->pdf($params);
+            // abort(501, 'Export PDF belum diimplementasikan.');
 
         }
         
     }
 
-    private function excel($params)
+    private function excel(array $params)
     {
         // 2. Ambil data dari database MENGGUNAKAN LOGIKA FILTER YANG SAMA
         // Kita akan buat metode baru di model untuk ini, agar tidak ada paginasi
         $dataPenjualan = Penjualan::getDataForExport($params);
 
-        \dd($dataPenjualan);
+        // \dd($dataPenjualan);
 
         // 3. Buat objek Spreadsheet baru
         $spreadsheet = new Spreadsheet();
@@ -275,44 +309,70 @@ class PenjualanController extends Controller
         $sheet->setTitle('Laporan Penjualan');
 
         // 4. Tulis Header Tabel
-        $sheet->setCellValue('A1', 'No.');
-        $sheet->setCellValue('B1', 'No Bukti');
-        $sheet->setCellValue('C1', 'Tanggal Bukti');
-        $sheet->setCellValue('D1', 'Nama Pelanggan');
-        $sheet->setCellValue('E1', 'Nama Barang');
-        $sheet->setCellValue('F1', 'Qty');
-        $sheet->setCellValue('G1', 'Harga Satuan');
-        $sheet->setCellValue('H1', 'Total Harga');
+        $rowNum = 1; // Mulai dari baris pertama
 
-        // Beri style pada header
-        $headerStyle = [
-            'font' => ['bold' => true],
-            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
-            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]],
-        ];
-        $sheet->getStyle('A1:H1')->applyFromArray($headerStyle);
-
-        // 5. Tulis Data ke dalam Sheet
-        $rowNumber = 2; // Mulai dari baris ke-2
-        $counter = 1;
+        // 2. Loop untuk setiap transaksi PENJUALAN
         foreach ($dataPenjualan as $penjualan) {
-            foreach ($penjualan->details as $index => $detail) {
-                if ($index === 0) {
-                    // Hanya tulis data master di baris pertama setiap transaksi
-                    $sheet->setCellValue('A' . $rowNumber, $counter);
-                    $sheet->setCellValue('B' . $rowNumber, $penjualan->no_bukti);
-                    $sheet->setCellValue('C' . $rowNumber, $penjualan->tgl_bukti->format('d-m-Y'));
-                    $sheet->setCellValue('D' . $rowNumber, $penjualan->pelanggan->nama_pelanggan ?? 'N/A');
-                }
-                // Tulis data detail untuk setiap baris
-                $sheet->setCellValue('E' . $rowNumber, $detail->nama_barang);
-                $sheet->setCellValue('F' . $rowNumber, $detail->qty);
-                $sheet->setCellValue('G' . $rowNumber, $detail->harga);
-                $sheet->setCellValue('H' . $rowNumber, $detail->qty * $detail->harga);
+            // --- TULIS HEADER UNTUK SETIAP TRANSAKSI ---
+            $sheet->mergeCells('A' . $rowNum . ':B' . $rowNum);
+            $sheet->setCellValue('A' . $rowNum, 'No. Bukti:');
+            $sheet->setCellValue('C' . $rowNum, $penjualan->no_bukti);
+            $sheet->getStyle('A' . $rowNum . ':C' . $rowNum)->getFont()->setBold(true);
+            $rowNum++;
 
-                $rowNumber++;
+            $sheet->mergeCells('A' . $rowNum . ':B' . $rowNum);
+            $sheet->setCellValue('A' . $rowNum, 'Tanggal:');
+            // $sheet->setCellValue('C' . $rowNum, $penjualan->tgl_bukti->format('d F Y'));
+            $sheet->setCellValue('C' . $rowNum, $penjualan->tgl_bukti->format('d M Y'));
+            $rowNum++;
+
+            $sheet->mergeCells('A' . $rowNum . ':B' . $rowNum);
+            $sheet->setCellValue('A' . $rowNum, 'Pelanggan:');
+            $sheet->setCellValue('C' . $rowNum, $penjualan->pelanggan->nama_pelanggan ?? 'N/A');
+            $rowNum++;
+
+            // Beri spasi sebelum tabel detail
+            $rowNum++;
+
+            // --- TULIS HEADER UNTUK TABEL DETAIL ---
+            $sheet->setCellValue('B' . $rowNum, 'Nama Barang');
+            $sheet->setCellValue('C' . $rowNum, 'Qty');
+            $sheet->setCellValue('D' . $rowNum, 'Harga');
+            $sheet->setCellValue('E' . $rowNum, 'Total');
+            $sheet->getStyle('B' . $rowNum . ':E' . $rowNum)->getFont()->setBold(true);
+            $rowNum++;
+
+            $startRowDetail = $rowNum; // Tandai baris awal detail
+
+            // 3. Loop untuk setiap DETAIL BARANG di dalam penjualan
+            foreach ($penjualan->details as $detail) {
+                $sheet->setCellValue('B' . $rowNum, $detail->nama_barang);
+                $sheet->setCellValue('C' . $rowNum, $detail->qty);
+                $sheet->setCellValue('D' . $rowNum, $detail->harga);
+                // Gunakan formula Excel untuk menghitung total per baris
+                $sheet->setCellValue('E' . $rowNum, "=C" . $rowNum . "*D" . $rowNum);
+
+                // Terapkan format angka
+                $sheet->getStyle('C' . $rowNum)->getNumberFormat()->setFormatCode('#,##0');
+                $sheet->getStyle('D' . $rowNum . ':E' . $rowNum)->getNumberFormat()->setFormatCode('"Rp "#,##0.00');
+
+                $rowNum++;
             }
-            $counter++;
+            $endRowDetail = $rowNum - 1; // Tandai baris akhir detail
+
+            // --- TULIS GRAND TOTAL ---
+            if ($startRowDetail <= $endRowDetail) {
+                $formulaGrandTotal = "=SUM(E" . $startRowDetail . ":E" . $endRowDetail . ")";
+                $sheet->mergeCells('B' . $rowNum . ':D' . $rowNum);
+                $sheet->setCellValue('B' . $rowNum, 'Grand Total:');
+                $sheet->setCellValue('E' . $rowNum, $formulaGrandTotal);
+                $sheet->getStyle('B' . $rowNum . ':E' . $rowNum)->getFont()->setBold(true);
+                $sheet->getStyle('E' . $rowNum)->getNumberFormat()->setFormatCode('"Rp "#,##0.00');
+                $sheet->getStyle('B' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            }
+
+            // Beri 2 baris spasi sebagai pemisah antar data penjualan
+            $rowNum += 2;
         }
 
         // 6. Atur lebar kolom secara otomatis
@@ -322,16 +382,107 @@ class PenjualanController extends Controller
 
         // 7. Siapkan Writer dan kirim file ke browser
         $writer = new Xlsx($spreadsheet);
-        $fileName = 'laporan-penjualan-' . date('Y-m-d') . '.xlsx';
+        $fileName = 'laporan-penjualan-' . date('Ymd_His') . '.xlsx';
 
-        // Set header HTTP untuk memicu unduhan
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $fileName . '"');
-        header('Cache-Control: max-age=0');
+        // Kembalikan sebagai StreamedResponse agar bisa ditangkap sebagai blob
+        return response()->stream(
+            function () use ($writer) {
+                $writer->save('php://output');
+            },
+            200,
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            ]
+        );
 
-        // Tulis file ke output PHP
-        $writer->save('php://output');
-        exit();
+        // // Set header HTTP untuk memicu unduhan
+        // header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        // header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        // header('Cache-Control: max-age=0');
+
+        // // Tulis file ke output PHP
+        // $writer->save('php://output');
+        // exit();
+    }
+
+    /**
+     * Menampilkan halaman laporan PDF.
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function showPdfReport(Request $request)
+    {
+        // Ambil semua parameter filter dari request
+        $params = $request->all();
+
+        // Ambil data yang sudah ditransformasi untuk Stimulsoft
+        $laporanData = $this->getPdfData($params);
+
+        // Kembalikan view Blade dan kirim data laporan ke dalamnya
+        return view('report.index', [
+            'laporanJSON' => json_encode($laporanData) // Kirim sebagai string JSON
+        ]);
+    }
+
+    /**
+     * Metode helper untuk mengambil dan memformat data PDF.
+     * (Ini adalah isi dari metode pdf() Anda sebelumnya)
+     */
+    private function getPdfData(array $params)
+    {
+        $dataPenjualan = Penjualan::getDataForExport($params);
+        $laporanData = [];
+        foreach ($dataPenjualan as $penjualan) {
+            if ($penjualan->details->isEmpty()) continue;
+            foreach ($penjualan->details as $detail) {
+                $laporanData[] = [
+                    'id_penjualan'   => $penjualan->id,
+                    'no_bukti'       => $penjualan->no_bukti,
+                    'tgl_bukti'      => $penjualan->tgl_bukti->format('d-m-Y'),
+                    'nama_pelanggan' => $penjualan->pelanggan->nama_pelanggan ?? 'N/A',
+                    'nama_barang'    => $detail->nama_barang,
+                    'qty'            => (float)$detail->qty,
+                    'harga'          => (float)$detail->harga,
+                ];
+            }
+        }
+        return ['DataPenjualan' => $laporanData];
+    }
+
+    private function pdf(array $params)
+    {
+        // 1. Ambil data yang sudah dikelompokkan menggunakan metode Eloquent
+        $dataPenjualan = Penjualan::getDataForExport($params);
+
+        // 2. Transformasi data menjadi struktur "datar" yang dibutuhkan
+        $laporanData = [];
+        foreach ($dataPenjualan as $penjualan) {
+            // Lewati penjualan yang mungkin tidak memiliki detail
+            if ($penjualan->details->isEmpty()) {
+                continue;
+            }
+
+            foreach ($penjualan->details as $detail) {
+                // Buat satu baris lengkap yang menggabungkan data master dan detail
+                $laporanData[] = [
+                    'id_penjualan'   => $penjualan->id,
+                    'no_bukti'       => $penjualan->no_bukti,
+                    'tgl_bukti'      => $penjualan->tgl_bukti->format('d-m-Y'),
+                    'nama_pelanggan' => $penjualan->pelanggan->nama_pelanggan ?? 'N/A',
+                    'nama_barang'    => $detail->nama_barang,
+                    'qty'            => (float)$detail->qty,
+                    'harga'          => (float)$detail->harga,
+                ];
+            }
+        }
+
+        // 3. Kembalikan data yang sudah ditransformasi sebagai JSON
+        // Strukturnya disesuaikan agar cocok dengan kebutuhan Stimulsoft
+        return response()->json([
+            'DataPenjualan' => $laporanData
+        ]);
     }
 
 }

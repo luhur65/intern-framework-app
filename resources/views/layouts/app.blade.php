@@ -93,6 +93,10 @@
       @yield('content')
     </main>
 
+    <div id="notificationDialog" title="Notifikasi" style="display:none;">
+      <p id="notificationMessage"></p>
+    </div>
+
     <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     {{-- <script src="{{ asset('jqgrid/jquery-3.6.0.js') }}"></script> --}}

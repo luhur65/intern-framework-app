@@ -1,3 +1,17 @@
+// Dialog JQuery
+function showNotificationDialog(message) {
+  $('#notificationMessage').text(message);
+  $('#notificationDialog').dialog({
+    modal: true,
+    zIndex: 9999,
+    buttons: {
+      "Ok": function () {
+        $(this).dialog("close");
+      }
+    }
+  });
+}
+
 // Fungsi untuk mendapatkan ID baris yang dipilih
 function getSelectedRowId() {
   return $("#jqGrid").jqGrid('getGridParam', 'selrow');
@@ -546,6 +560,12 @@ function exportModal(mode) {
 
   $('#confirmExportBtn').data('mode', mode); // simpan data mode;
   $('#exportFormLabel').text(mode === 'excel' ? 'Export Excel' : 'Export PDF');
+
+  // Atur nilai default untuk input rentang
+  const totalRecords = $('#jqGrid').jqGrid('getGridParam', 'records');
+  $('#start_range').val(parseInt(1));
+  $('#end_range').val(parseInt(totalRecords));
+
   $('#exportForm').modal('show');
 
 }
