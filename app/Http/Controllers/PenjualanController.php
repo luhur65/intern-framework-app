@@ -8,6 +8,7 @@ use App\Models\Pelanggan;
 use App\Models\Penjualan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 // use Illuminate\Support\Facades\DB as MySQLDB;
@@ -204,6 +205,39 @@ class PenjualanController extends Controller
     }
 
     /**
+     * Memvalidasi input untuk permintaan ekspor via AJAX.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function validateExport(Request $request)
+    {
+        // Hitung total record berdasarkan filter yang dikirim untuk aturan 'max'
+        $totalRecords = Penjualan::getDataForExport($request->all())->count();
+
+        // Terapkan aturan validasi
+        $validator = Validator::make($request->all(), [
+            'start_range' => ['required', 'integer', 'min:1', 'lte:end_range'],
+            'end_range'   => ['required', 'integer', 'min:1', 'max:' . $totalRecords],
+        ], [
+            // Pesan error kustom
+            'start_range.required' => 'Kolom Awal wajib diisi.',
+            'start_range.min'      => 'Harus dimulai dari angka 1 atau lebih.',
+            'start_range.lte'      => 'Nilai awal tidak boleh lebih besar dari akhir.',
+            'end_range.required'   => 'Kolom Akhir wajib diisi.',
+            'end_range.max'        => 'Maksimal hanya sampai ' . $totalRecords . ' data.',
+        ]);
+
+        // Jika validasi gagal, kembalikan respons JSON 422
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Jika berhasil, kirim respons sukses
+        return response()->json(['message' => 'Validasi berhasil!']);
+    }
+
+    /**
      * Menangani permintaan untuk mengekspor data ke berbagai format (Excel, PDF, dll).
      *
      * @param Request $request
@@ -218,7 +252,7 @@ class PenjualanController extends Controller
         // \dd($params);
         
         if ($mode === 'excel') {
-            $this->excel($params);
+            return $this->excel($params);
 
         } else if ($mode === 'pdf') {
             abort(501, 'Export PDF belum diimplementasikan.');
@@ -227,7 +261,7 @@ class PenjualanController extends Controller
         
     }
 
-    public function excel($params)
+    private function excel($params)
     {
         // 2. Ambil data dari database MENGGUNAKAN LOGIKA FILTER YANG SAMA
         // Kita akan buat metode baru di model untuk ini, agar tidak ada paginasi
