@@ -139,7 +139,7 @@ class Penjualan extends Model
 
                 // offset() dulu untuk melewati, baru limit() untuk mengambil
                 // return $baseQuery->orderBy($sidx, $sord)->offset($offset)->limit($countToFetch)->get();
-                return self::with(['pelanggan', 'details']) // <-- Muat relasi
+                return $baseQuery // <-- Muat relasi
                     ->orderBy($sidx, $sord)
                     ->offset($offset)
                     ->limit($countToFetch)
