@@ -313,7 +313,7 @@
         const setQtyNumeric = {
             digitGroupSeparator: '', // Tanpa pemisah ribuan
             decimalCharacter: '.',
-            decimalPlaces: 0,
+            decimalPlaces: 2,
             minimumValue: '0',
         };
 
