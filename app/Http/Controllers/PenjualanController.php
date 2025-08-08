@@ -288,7 +288,7 @@ class PenjualanController extends Controller
             return $this->excel($params);
 
         } else if ($mode === 'pdf') {
-            return $this->pdf($params);
+            return $this->pdf();
             // abort(501, 'Export PDF belum diimplementasikan.');
 
         }
@@ -300,8 +300,6 @@ class PenjualanController extends Controller
         // 2. Ambil data dari database MENGGUNAKAN LOGIKA FILTER YANG SAMA
         // Kita akan buat metode baru di model untuk ini, agar tidak ada paginasi
         $dataPenjualan = Penjualan::getDataForExport($params);
-
-        \dd($dataPenjualan);
 
         // \dd($dataPenjualan);
 
@@ -453,37 +451,37 @@ class PenjualanController extends Controller
         return ['DataPenjualan' => $laporanData];
     }
 
-    private function pdf(array $params)
+    private function pdf()
     {
         // 1. Ambil data yang sudah dikelompokkan menggunakan metode Eloquent
-        $dataPenjualan = Penjualan::getDataForExport($params);
+        // $dataPenjualan = Penjualan::getDataForExport($params);
 
-        // 2. Transformasi data menjadi struktur "datar" yang dibutuhkan
-        $laporanData = [];
-        foreach ($dataPenjualan as $penjualan) {
-            // Lewati penjualan yang mungkin tidak memiliki detail
-            if ($penjualan->details->isEmpty()) {
-                continue;
-            }
+        // // 2. Transformasi data menjadi struktur "datar" yang dibutuhkan
+        // $laporanData = [];
+        // foreach ($dataPenjualan as $penjualan) {
+        //     // Lewati penjualan yang mungkin tidak memiliki detail
+        //     if ($penjualan->details->isEmpty()) {
+        //         continue;
+        //     }
 
-            foreach ($penjualan->details as $detail) {
-                // Buat satu baris lengkap yang menggabungkan data master dan detail
-                $laporanData[] = [
-                    'id_penjualan'   => $penjualan->id,
-                    'no_bukti'       => $penjualan->no_bukti,
-                    'tgl_bukti'      => $penjualan->tgl_bukti->format('d-m-Y'),
-                    'nama_pelanggan' => $penjualan->pelanggan->nama_pelanggan ?? 'N/A',
-                    'nama_barang'    => $detail->nama_barang,
-                    'qty'            => (float)$detail->qty,
-                    'harga'          => (float)$detail->harga,
-                ];
-            }
-        }
+        //     foreach ($penjualan->details as $detail) {
+        //         // Buat satu baris lengkap yang menggabungkan data master dan detail
+        //         $laporanData[] = [
+        //             'id_penjualan'   => $penjualan->id,
+        //             'no_bukti'       => $penjualan->no_bukti,
+        //             'tgl_bukti'      => $penjualan->tgl_bukti->format('d-m-Y'),
+        //             'nama_pelanggan' => $penjualan->pelanggan->nama_pelanggan ?? 'N/A',
+        //             'nama_barang'    => $detail->nama_barang,
+        //             'qty'            => (float)$detail->qty,
+        //             'harga'          => (float)$detail->harga,
+        //         ];
+        //     }
+        // }
 
         // 3. Kembalikan data yang sudah ditransformasi sebagai JSON
         // Strukturnya disesuaikan agar cocok dengan kebutuhan Stimulsoft
         return response()->json([
-            'DataPenjualan' => $laporanData
+            'message' => 'Ok'
         ]);
     }
 

@@ -142,8 +142,7 @@ class Penjualan extends Model
                 return $baseQuery // <-- Muat relasi
                     ->orderBy($sidx, $sord)
                     ->offset($offset)
-                    ->limit($countToFetch)
-                    ->get();
+                    ->limit($countToFetch);
 
                 // \dd($data);
             }
@@ -249,8 +248,51 @@ class Penjualan extends Model
 
     public static function getDataForExport(array $params)
     {
-        return self::getGridMaster($params);
+        $data = (object)self::getGridMaster($params);
+        $correctPenjualanIds = $data->distinct()->pluck('penjualans.id');
+
+        if ($correctPenjualanIds->isEmpty()) {
+            return collect();
+        }
+
+        // Ambil semua data penjualan master yang relevan
+        $penjualanMasters = DB::table('penjualans')
+            ->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id')
+            ->whereIn('penjualans.id', $correctPenjualanIds)
+            ->select('penjualans.*', 'pelanggans.nama_pelanggan')
+            ->get();
+
+        // Ambil semua data detail yang relevan dalam satu query
+        $allDetails = DB::table('penjualan_details')
+            ->whereIn('penjualan_id', $correctPenjualanIds)
+            ->get();
+
+        // --- LANGKAH 3: KELOMPOKKAN DETAIL BERDASARKAN ID PENJUALAN ---
+        $groupedDetails = $allDetails->groupBy('penjualan_id');
+
+        // --- LANGKAH 4: GABUNGKAN DATA MASTER DENGAN DETAIL SECARA MANUAL ---
+        $data = $penjualanMasters->map(function ($penjualan) use ($groupedDetails) {
+            // Tambahkan properti 'details' ke setiap objek penjualan
+            // Jika tidak ada detail, berikan koleksi kosong
+            $penjualan->details = $groupedDetails->get($penjualan->id, collect());
+
+            // Tambahkan properti 'pelanggan' agar strukturnya mirip Eloquent
+            $penjualan->pelanggan = (object)['nama_pelanggan' => $penjualan->nama_pelanggan];
+
+            // Ubah string tanggal menjadi objek Carbon agar bisa di-format nanti
+            $penjualan->tgl_bukti = \Carbon\Carbon::parse($penjualan->tgl_bukti);
+
+            return $penjualan;
+        });
+
+        // Urutkan hasil akhir sesuai dengan urutan ID yang kita dapatkan di Langkah 1
+        $sortedData = $data->sortBy(function ($penjualan) use ($correctPenjualanIds) {
+            return array_search($penjualan->id, $correctPenjualanIds->toArray());
+        });
+
+        return $sortedData;
         // return $data;
         // \dd($data);
     }
+
 }
