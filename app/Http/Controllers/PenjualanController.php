@@ -301,8 +301,6 @@ class PenjualanController extends Controller
         // Kita akan buat metode baru di model untuk ini, agar tidak ada paginasi
         $dataPenjualan = Penjualan::getDataForExport($params);
 
-        // \dd($dataPenjualan);
-
         // 3. Buat objek Spreadsheet baru
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();

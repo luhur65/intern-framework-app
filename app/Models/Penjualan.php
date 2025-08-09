@@ -257,7 +257,7 @@ class Penjualan extends Model
     public static function getDataForExport(array $params)
     {
         $data = (object)self::getGridMaster($params);
-        $correctPenjualanIds = $data->distinct()->pluck('penjualans.id');
+        $correctPenjualanIds = $data->pluck('penjualans.id');
 
         if ($correctPenjualanIds->isEmpty()) {
             return collect();
@@ -273,6 +273,7 @@ class Penjualan extends Model
         // Ambil semua data detail yang relevan dalam satu query
         $allDetails = DB::table('penjualan_details')
             ->whereIn('penjualan_id', $correctPenjualanIds)
+            ->orderBy($params['sidx_detail'], $params['sord_detail'])
             ->get();
 
         // --- LANGKAH 3: KELOMPOKKAN DETAIL BERDASARKAN ID PENJUALAN ---

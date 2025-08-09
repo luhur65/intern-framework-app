@@ -1000,6 +1000,13 @@
             const exportData = $('#jqGrid').jqGrid('getGridParam', 'postData');
             let totalRecords = $("#jqGrid").jqGrid('getGridParam', 'records');
 
+            // Ambil sord, sidx detail grid
+            const detailSidx = $('#detailItem').jqGrid('getGridParam', 'sortname');
+            const detailSord = $('#detailItem').jqGrid('getGridParam', 'sortorder');
+
+            exportData.sord_detail = detailSord;
+            exportData.sidx_detail = detailSidx;
+
             // Kirim data start_range dan end_range
             exportData.start_range = $('#start_range').val();
             exportData.end_range = $('#end_range').val();
