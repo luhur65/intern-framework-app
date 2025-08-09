@@ -414,6 +414,11 @@ class PenjualanController extends Controller
      */
     public function showPdfReport(Request $request)
     {
+        // jika tidak ada param|start_range dan end_range, kasih 404
+        if (!$request->filled('start_range') && !$request->filled('end_range')) {
+            abort(403, "Halaman tidak bisa diakses!");
+        }
+
         // Ambil semua parameter filter dari request
         $params = $request->all();
 
