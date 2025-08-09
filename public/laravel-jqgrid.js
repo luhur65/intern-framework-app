@@ -558,6 +558,10 @@ function resetFormAndValidation() {
 
 function exportModal(mode) {
 
+  // bersihkan 
+  $('.error-text').text('');
+  $('#start_range_input, #end_range_input').removeClass('is-invalid');
+
   $('#confirmExportBtn').data('mode', mode); // simpan data mode;
   $('#exportFormLabel').text(mode === 'excel' ? 'Export Excel' : 'Export PDF');
 

@@ -264,11 +264,11 @@ class Penjualan extends Model
         }
 
         // Ambil semua data penjualan master yang relevan
-        $penjualanMasters = DB::table('penjualans')
-            ->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id')
-            ->whereIn('penjualans.id', $correctPenjualanIds)
-            ->select('penjualans.*', 'pelanggans.nama_pelanggan')
-            ->get();
+        // $penjualanMasters = DB::table('penjualans')
+        //     ->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id')
+        //     ->whereIn('penjualans.id', $correctPenjualanIds)
+        //     ->select('penjualans.*', 'pelanggans.nama_pelanggan')
+        //     ->get();
 
         // Ambil semua data detail yang relevan dalam satu query
         $allDetails = DB::table('penjualan_details')
@@ -280,7 +280,7 @@ class Penjualan extends Model
         $groupedDetails = $allDetails->groupBy('penjualan_id');
 
         // --- LANGKAH 4: GABUNGKAN DATA MASTER DENGAN DETAIL SECARA MANUAL ---
-        $data = $penjualanMasters->map(function ($penjualan) use ($groupedDetails) {
+        $data = $data->get()->map(function ($penjualan) use ($groupedDetails) {
             // Tambahkan properti 'details' ke setiap objek penjualan
             // Jika tidak ada detail, berikan koleksi kosong
             $penjualan->details = $groupedDetails->get($penjualan->id, collect());

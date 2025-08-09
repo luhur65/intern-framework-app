@@ -142,6 +142,10 @@ class PenjualanController extends Controller
      */
     public function show(string $id)
     {
+        if ($id === null) {
+            \abort(403, 'Tidak bisa diakses');
+        }
+
         try {
             // Panggil service untuk mengambil dan memformat data
             $data = $this->penjualanService->getPenjualanForEdit($id);
@@ -249,6 +253,10 @@ class PenjualanController extends Controller
      */
     public function export(Request $request, string $mode)
     {
+        // Cek apakah ada payload JSON yang dikirim.
+        // empty() akan menangani kasus di mana body kosong ({}) atau tidak ada sama sekali.
+        // if (empty($request->json()->all())) {
+        //     abort(403, "Akses tidak sah. Permintaan tidak berisi data.");
         
         // parameter record dari request, sama seperti di grid
         $totalRecords = $request->json('record', 0);
