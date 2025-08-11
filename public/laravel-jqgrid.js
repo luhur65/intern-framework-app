@@ -23,14 +23,33 @@ function selectRow(id) {
 }
 
 function highlightText(cell, keyword) {
-
   if (!keyword) return;
+
+  const textOnly = cell.text().trim().toUpperCase();
+
+  // Lewati kalau isinya "TIDAK ADA DATA"
+  if (textOnly === 'TIDAK ADA DATA') return;
+
   const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(`(${escapedKeyword})`, "gi");
-  const updatedHtml = cell.html().replace(regex, '<span class="highlight">$1</span>');
-  cell.html(updatedHtml);
 
+  cell.contents().each(function () {
+    if (this.nodeType === 3) { // Node teks
+      const newHtml = this.nodeValue.replace(regex, '<span class="highlight">$1</span>');
+      $(this).replaceWith(newHtml);
+    }
+  });
 }
+
+// function highlightText(cell, keyword) {
+
+//   if (!keyword) return;
+//   const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+//   const regex = new RegExp(`(${escapedKeyword})`, "gi");
+//   const updatedHtml = cell.html().replace(regex, '<span class="highlight">$1</span>');
+//   cell.html(updatedHtml);
+
+// }
 
 function higligthPencarian(grid) {
   const postData = grid.getGridParam("postData");
