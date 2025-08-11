@@ -270,10 +270,13 @@ class Penjualan extends Model
         //     ->select('penjualans.*', 'pelanggans.nama_pelanggan')
         //     ->get();
 
+        $sidx = $params['sidx_detail'] ?? 'nama_barang';
+        $sord = $params['sord_detail'] ?? 'desc';
+
         // Ambil semua data detail yang relevan dalam satu query
         $allDetails = DB::table('penjualan_details')
             ->whereIn('penjualan_id', $correctPenjualanIds)
-            ->orderBy($params['sidx_detail'], $params['sord_detail'])
+            ->orderBy($sidx, $sord)
             ->get();
 
         // --- LANGKAH 3: KELOMPOKKAN DETAIL BERDASARKAN ID PENJUALAN ---
