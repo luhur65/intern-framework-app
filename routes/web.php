@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Route;
 Route::match(['GET', 'POST'],  '/', [PenjualanController::class, 'index'])->name('penjualan.index');
 Route::get('/penjualan/export', function () {
     abort(404);
-})->name('penjualan.show');
+});
 // Route::get('/', [PenjualanController::class, 'index'])->name('penjualan.index');
 Route::get('penjualan/master', [PenjualanController::class, 'master'])->name('penjualan.master');
-Route::resource('penjualan', PenjualanController::class)->except(['index' ,'show']);
+Route::resource('penjualan', PenjualanController::class)->except(['index']);
 
 // Route Penjualan Detail
 // Route::get('detail/', [PenjualanDetailController::class, 'index'])
