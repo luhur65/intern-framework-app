@@ -18,7 +18,7 @@ class PenjualanFactory extends Factory
     public function definition(): array
     {
         return [
-            'no_bukti' => strtoupper(fake()->bothify('???##')),
+            'no_bukti' => strtoupper(fake()->bothify('BRG-NO-####')),
             'tgl_bukti' => fake()->dateTimeBetween('2024-01-01', '2025-12-31')->format('Y-m-d'),
             'pelanggan_id' => Pelanggan::inRandomOrder()->first()->id ?? Pelanggan::factory(),
         ];

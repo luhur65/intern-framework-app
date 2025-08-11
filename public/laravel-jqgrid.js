@@ -431,6 +431,25 @@ function openModal(mode, data = {}) {
   $('#deleteBtn').toggleClass('d-none', mode !== 'delete');
   $('#penjualanForm')[0].reset();
 
+  // if (mode === 'add') {
+  //   $('#no_bukti').prop('readonly', true).val('Memuat nomor...');
+
+  //   // Panggil AJAX untuk mendapatkan nomor bukti baru
+  //   $.ajax({
+  //     url: '/generate/nobukti',
+  //     type: 'GET',
+  //     success: function (response) {
+  //       // Jika berhasil, isi input dengan nomor baru dari backend
+  //       $('#no_bukti').val(response.no_bukti);
+  //     },
+  //     error: function () {
+  //       // Jika gagal, tampilkan pesan error
+  //       // $('#no_bukti').val('Gagal memuat!');
+  //       showNotificationDialog('Gagal mendapatkan nomor bukti dari server.');
+  //     }
+  //   });
+  // }
+
   if (mode === 'edit' || mode === 'delete') {
     $('#formId').val(data.id);
     $('#no_bukti').val(data.no_bukti);

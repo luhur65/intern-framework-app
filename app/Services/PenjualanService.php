@@ -9,23 +9,62 @@ use Exception;
 
 class PenjualanService implements PenjualanServiceInterface
 {
+
+  private $prefix = 'BRG-NO-';
+
+  /**
+   * Menghasilkan nomor bukti berikutnya yang tersedia menggunakan Query Builder.
+   *
+   * @return string
+   */
+  public function getNextNoBukti(): string
+  {
+    // Cari no_bukti terakhir menggunakan Query Builder dengan filter
+    $lastPenjualan = DB::table('penjualans')
+      ->where('no_bukti', 'like', $this->prefix . '%')
+      ->orderBy('no_bukti', 'desc')
+      ->first();
+
+    if (!$lastPenjualan) {
+      // Jika tidak ada data sama sekali, mulai dari 1
+      return $this->prefix . '0001';
+    }
+
+    // Ambil bagian angka dari string (misal: 'BRG-NO-0021' -> '0021')
+    $lastNumber = (int) substr($lastPenjualan->no_bukti, 7);
+
+    // Tambah 1
+    $newNumber = $lastNumber + 1;
+
+    // Format kembali dengan padding nol di depan (misal: 22 -> '0022')
+    return $this->prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+  }
+
   /**
    * {@inheritdoc}
    */
   public function createPenjualan(array $data): Penjualan
   {
-    // Gunakan alias DB agar lebih singkat
-    DB::beginTransaction();
+    return DB::transaction(function () use ($data) {
+      $lastPenjualan = Penjualan::where('no_bukti', 'like', $this->prefix . '%')
+        ->orderBy('no_bukti', 'desc')
+        ->lockForUpdate()
+        ->first();
 
-    try {
-      // Buat data master penjualan
+      if (!$lastPenjualan) {
+        $newNoBukti = $this->prefix . '0001';
+      } else {
+        $lastNumber = (int) substr($lastPenjualan->no_bukti, strlen($this->prefix));
+        $newNumber  = $lastNumber + 1;
+        $newNoBukti = $this->prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+      }
+
       $penjualan = Penjualan::create([
-        'no_bukti'     => strtoupper($data['no_bukti']),
+        'no_bukti'     => $newNoBukti,
         'tgl_bukti'    => date('Y-m-d', strtotime($data['tgl_bukti'])),
         'pelanggan_id' => $data['nama_pelanggan'],
       ]);
 
-      // Loop untuk menyimpan detail barang
       foreach ($data['barang'] as $item) {
         $penjualan->details()->create([
           'nama_barang' => strtoupper($item['nama_barang']),
@@ -34,17 +73,8 @@ class PenjualanService implements PenjualanServiceInterface
         ]);
       }
 
-      DB::commit();
-
-      // Kembalikan model Penjualan yang berhasil dibuat
       return $penjualan;
-    } catch (Exception $e) {
-      // Jika terjadi error, batalkan semua query
-      DB::rollBack();
-
-      // Lemparkan kembali exception untuk ditangani oleh controller
-      throw new Exception('Gagal menyimpan data penjualan: ' . $e->getMessage());
-    }
+    });
   }
 
   public function getPenjualanForEdit(int $id): array
@@ -91,7 +121,7 @@ class PenjualanService implements PenjualanServiceInterface
     try {
       // 1. Update data master penjualan
       $penjualan->update([
-        'no_bukti'     => strtoupper($data['no_bukti']),
+        // 'no_bukti'     => strtoupper($data['no_bukti']),
         'tgl_bukti'    => date('Y-m-d', strtotime($data['tgl_bukti'])),
         'pelanggan_id' => $data['nama_pelanggan'],
       ]);

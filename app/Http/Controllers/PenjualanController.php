@@ -64,6 +64,23 @@ class PenjualanController extends Controller
     }
 
     /**
+     * Generate no bukti
+     * 
+     * @return jsonResponse
+     */
+    public function generateNoBukti(): JsonResponse
+    {
+        try {
+            // Panggil service untuk mendapatkan nomor berikutnya
+            $noBukti = $this->penjualanService->getNextNoBukti();
+
+            return response()->json(['no_bukti' => $noBukti]);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'Gagal menghasilkan nomor bukti.'], 500);
+        }
+    }
+
+    /**
      * Helper method untuk mengambil data grid dan mengembalikannya sebagai JSON.
      *
      * @param Request $request Request saat ini untuk mengambil parameter grid.
@@ -92,17 +109,29 @@ class PenjualanController extends Controller
         // $urlMaster = route('penjualan.master');
         // $urlDetail = route('penjualan.detail.getDetail');
         // $querySQL = Penjualan::query()->gridMaster($this->gridParams)->toSql();
-
+        // $generateNoBukti = $this->penjualanService->getNextNoBukti();
         $pelanggans = Pelanggan::getDataPelanggan();
-        return \view('penjualan.index', [
-            'pelanggans' => $pelanggans,
-        ]);
+        return \view('penjualan.index', \compact('pelanggans'));
     }
     /**
      * Get master data for Penjualan.
      */
     public function master()
     {
+        $this->gridParams['global_search'] = \request()->input('global_search', '');
+        $this->gridParams['_search'] = \request()->input('_search', 'false');
+
+        if (request()->input('_search') == 'true') {
+            // echo "search true";
+            // $this->gridParams['filters'] = \request()->input('filters', []);
+            $filterJson = request()->input('filters');
+            $decoded = json_decode($filterJson, true);
+            if (isset($decoded['rules'])) {
+                $this->filters = $decoded['rules'];
+            }
+
+            $this->gridParams['filters'] = $this->filters;
+        }
         $masterData = Penjualan::getGridMaster($this->gridParams);
         return response()->json($masterData);
     }

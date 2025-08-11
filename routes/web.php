@@ -28,3 +28,6 @@ Route::get('penjualan/{penjualanId?}/detail', [PenjualanDetailController::class,
 // Route::post('/penjualan/export/validasi', [PenjualanController::class, 'validateExport'])->name('penjualan.export.validate');
 Route::post('penjualan/export/{mode}', [PenjualanController::class, 'export'])->name('penjualan.export')->middleware(BlockMethodRoute::class);
 Route::get('/penjualan/report/viewpdf', [PenjualanController::class, 'showPdfReport'])->name('penjualan.report.view');
+
+// Generate No Bukti
+// Route::get('/generate/nobukti', [PenjualanController::class, 'generateNoBukti'])->name('penjualan.generate_nobukti');

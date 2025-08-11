@@ -23,7 +23,7 @@ class StorePenjualanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'no_bukti' => 'required|string|max:255',
+            // 'no_bukti' => 'required|string|max:255',
             'tgl_bukti' => 'required|date',
             'nama_pelanggan' => 'required|exists:pelanggans,id',
             'barang' => 'required|array',

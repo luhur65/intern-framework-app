@@ -3,6 +3,8 @@
 
 @section('content')
 
+    {{-- @dd($generateNoBukti) --}}
+
     {{-- <h1>Penjualan</h1> --}}
 
     <!-- tabel penjualan -->
@@ -43,8 +45,8 @@
                                 <div class="col-sm-10">
                                     <input type="text" class="form-control" id="no_bukti" name="no_bukti" required
                                         autocomplete="off"
-                                        data-inputmask="'mask': 'AAA99', 'greedy': 'false', 'placeholder': '', 'showMaskOnHover': false, 'showMaskOnFocus': false"
-                                        inputmode="text">
+                                        data-inputmask="'mask': 'AAA-AA-9999', 'greedy': 'false', 'placeholder': '', 'showMaskOnHover': false, 'showMaskOnFocus': false"
+                                        inputmode="text" readonly>
                                     <span class="text-danger error-text no_bukti_error"></span>
                                 </div>
                             </div>

@@ -10,6 +10,13 @@ use App\Models\Penjualan;
 interface PenjualanServiceInterface
 {
   /**
+   * Menghasilkan nomor bukti berikutnya yang tersedia menggunakan Query Builder.
+   *
+   * @return string
+   */
+  public function getNextNoBukti(): string;
+
+  /**
    * Membuat data penjualan baru beserta detailnya.
    *
    * @param array $data Data yang sudah divalidasi dari request.
