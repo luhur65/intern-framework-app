@@ -46,7 +46,7 @@ class PenjualanDetail extends Model
             );
             
         // Pagination
-        $sidx = $params['sidx'] ?? 'id_detail';
+        $sidx = $params['sidx'] ?? 'nama_barang';
         $sord = $params['sord'] ?? 'asc';
         $limit = $params['limit'] ?? 10;
         $page = $params['page'] ?? 1;

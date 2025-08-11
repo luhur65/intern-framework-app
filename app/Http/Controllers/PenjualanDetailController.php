@@ -49,6 +49,18 @@ class PenjualanDetailController extends Controller
     {
         $params = $this->gridParams;
         $params['penjualan_id'] = $penjualanId;
+        $params['global_search'] = request()->input('global_search', '');
+        $params['_search'] = request()->input('_search', 'false');
+
+        if (request()->has('_search') && request()->input('_search') == 'true') {
+            $filterJson = request()->input('filters');
+            $decoded = json_decode($filterJson, true);
+            if (isset($decoded['rules'])) {
+                $this->filters = $decoded['rules'];
+            }
+
+            $params['filters'] = $this->filters;
+        }
         $data = PenjualanDetail::getGridDetail($params);
         return \response()->json($data);
 
