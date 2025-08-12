@@ -1,3 +1,14 @@
+// PERBAIKAN 1: Ambil CSRF token yang benar
+const csrfToken = $('meta[name="csrf-token"]').attr('content') ||
+  $('input[name="_token"]').val() ||
+  document.querySelector('meta[name="csrf-token"]')?.content;
+
+if (!csrfToken) {
+  console.error('CSRF token tidak ditemukan!');
+  showNotificationDialog('Error: CSRF token tidak ditemukan');
+  // return;
+}
+
 // Dialog JQuery
 function showNotificationDialog(message) {
   $('#notificationMessage').text(message);
@@ -610,4 +621,96 @@ function exportModal(mode) {
 
   $('#exportForm').modal('show');
 
+}
+
+// Fungsi helper untuk handle error validasi
+function handleValidationErrors(errorData) {
+  if (errorData && errorData.errors) {
+    $.each(errorData.errors, function (key, value) {
+      $('.' + key + '_error').text(value[0]);
+      $('#' + key + '_input').addClass('is-invalid');
+    });
+  } else {
+    console.error('Terjadi kesalahan tidak terduga:', errorData.message || errorData);
+    showNotificationDialog('Terjadi kesalahan saat memproses permintaan.');
+  }
+}
+
+// Fungsi validasi khusus untuk PDF
+function validateAndExportPDF(exportData) {
+  // Tambahkan parameter untuk validasi saja
+  const validationData = { ...exportData, validate_only: true };
+
+  $.ajax({
+    url: '/penjualan/export/pdf',
+    type: 'POST',
+    data: JSON.stringify(validationData),
+    contentType: 'application/json',
+    dataType: 'json',
+    headers: {
+      'X-CSRF-TOKEN': csrfToken
+    },
+    success: function (res) {
+      if (res.message === "Ok") {
+        const queryString = $.param(exportData);
+        const exportUrl = `/penjualan/report/viewpdf?${queryString}`;
+        window.open(exportUrl, '_blank');
+        $('#exportForm').modal('hide');
+      }
+    },
+    error: function (xhr, status, error) {
+      console.error('AJAX Error:', xhr.responseJSON || xhr.responseText);
+      handleValidationErrors(xhr.responseJSON || { message: error });
+    }
+  });
+}
+
+// Fungsi export untuk Excel (logic yang sudah ada)
+function exportExcel(exportData) {
+  fetch(`/penjualan/export/excel`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      // 'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': csrfToken
+      // 'X-CSRF-TOKEN': '{{ csrf_token() }}'
+    },
+    body: JSON.stringify(exportData)
+  })
+    .then(response => {
+      if (response.ok) {
+        const disposition = response.headers.get('Content-Disposition');
+        return response.blob().then(blob => ({ blob, disposition }));
+      } else {
+        return response.json().then(errorData => {
+          throw errorData;
+        });
+      }
+    })
+    .then(({ blob, disposition }) => {
+      // Proses download Excel
+      let filename = "laporan.xlsx";
+      if (disposition && disposition.indexOf('attachment') !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+
+      $('#exportForm').modal('hide');
+    })
+    .catch(errorData => {
+      handleValidationErrors(errorData);
+    });
 }

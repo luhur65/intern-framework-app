@@ -1015,80 +1015,90 @@
             // exportData._token = '{{ csrf_token() }}';
             exportData.record = totalRecords;
 
-            // 2. Gunakan fetch API untuk permintaan yang lebih canggih
-            fetch(`/penjualan/export/${mode}`, {
-                method: 'POST',
-                headers: {
-                    // 'Content-Type' tidak perlu diatur untuk FormData
-                    'Accept': 'application/json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify(exportData)
-            })
-            .then(response => {
-                // 3. Cek status respons SEBELUM membaca body
-                if (response.ok) {
-                    // Jika status OK (2xx), berarti ini adalah file.
-                    // Ambil header dan kembalikan blob-nya.
-                    const disposition = response.headers.get('Content-Disposition');
-                    return response.blob().then(blob => ({ blob, disposition }));
-                } else {
-                    // Jika status tidak OK (4xx, 5xx), berarti ini adalah error JSON.
-                    // Baca sebagai JSON dan lemparkan sebagai error untuk ditangkap oleh .catch().
-                    return response.json().then(errorData => {
-                        throw errorData;
-                    });
-                }
-            })
-            .then(({ blob, disposition }) => {
+            // 2. PERBAIKAN: Buat endpoint khusus validasi atau gunakan parameter validasi
+            // Untuk PDF, kita perlu validasi dulu sebelum buka tab baru
+            if (mode === 'pdf') {
+                // Opsi 1: Gunakan endpoint validasi terpisah
+                validateAndExportPDF(exportData);
+            } else {
+                // Opsi 2: Untuk Excel, lanjutkan dengan logic yang sudah ada
+                exportExcel(exportData);
+            }
 
-                // jika mode pdf
-                if (mode === 'pdf') {
-                  // Ini akan mengubah { _search: false, sidx: 'id', ... } menjadi "_search=false&sidx=id&..."
-                  const queryString = $.param(exportData);
-                  const exportUrl = `/penjualan/report/view${mode}?${queryString}`;
+            // // 2. Gunakan fetch API untuk permintaan yang lebih canggih
+            // fetch(`/penjualan/export/${mode}`, {
+            //     method: 'POST',
+            //     headers: {
+            //         // 'Content-Type' tidak perlu diatur untuk FormData
+            //         'Accept': 'application/json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            //         'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            //     },
+            //     body: JSON.stringify(exportData)
+            // })
+            // .then(response => {
+            //     // 3. Cek status respons SEBELUM membaca body
+            //     if (response.ok) {
+            //         // Jika status OK (2xx), berarti ini adalah file.
+            //         // Ambil header dan kembalikan blob-nya.
+            //         const disposition = response.headers.get('Content-Disposition');
+            //         return response.blob().then(blob => ({ blob, disposition }));
+            //     } else {
+            //         // Jika status tidak OK (4xx, 5xx), berarti ini adalah error JSON.
+            //         // Baca sebagai JSON dan lemparkan sebagai error untuk ditangkap oleh .catch().
+            //         return response.json().then(errorData => {
+            //             throw errorData;
+            //         });
+            //     }
+            // })
+            // .then(({ blob, disposition }) => {
 
-                  // 3. Buka URL ekspor di tab baru dengan query string yang sudah dibuat
-                  window.open(exportUrl, '_blank');
+            //     // jika mode pdf
+            //     if (mode === 'pdf') {
+            //       // Ini akan mengubah { _search: false, sidx: 'id', ... } menjadi "_search=false&sidx=id&..."
+            //       const queryString = $.param(exportData);
+            //       const exportUrl = `/penjualan/report/view${mode}?${queryString}`;
 
-                  // 4. Tutup modal setelah proses dimulai
-                  $('#exportForm').modal('hide');
-                  return
-                }
+            //       // 3. Buka URL ekspor di tab baru dengan query string yang sudah dibuat
+            //       window.open(exportUrl, '_blank');
 
-                // 4. JIKA SUKSES, proses blob menjadi unduhan
-                let filename = "laporan.xlsx";
-                if (disposition && disposition.indexOf('attachment') !== -1) {
-                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                    const matches = filenameRegex.exec(disposition);
-                    if (matches != null && matches[1]) {
-                        filename = matches[1].replace(/['"]/g, '');
-                    }
-                }
+            //       // 4. Tutup modal setelah proses dimulai
+            //       $('#exportForm').modal('hide');
+            //       return
+            //     }
 
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = downloadUrl;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(downloadUrl);
-                document.body.removeChild(a);
+            //     // 4. JIKA SUKSES, proses blob menjadi unduhan
+            //     let filename = "laporan.xlsx";
+            //     if (disposition && disposition.indexOf('attachment') !== -1) {
+            //         const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+            //         const matches = filenameRegex.exec(disposition);
+            //         if (matches != null && matches[1]) {
+            //             filename = matches[1].replace(/['"]/g, '');
+            //         }
+            //     }
 
-                $('#exportForm').modal('hide');
-            })
-            .catch(errorData => {
-                // 5. JIKA GAGAL, tangkap error yang dilempar dan tampilkan
-                if (errorData && errorData.errors) {
-                    $.each(errorData.errors, function(key, value) {
-                        $('.' + key + '_error').text(value[0]);
-                        $('#' + key + '_input').addClass('is-invalid');
-                    });
-                } else {
-                    console.error('Terjadi kesalahan tidak terduga:', errorData.message);                    
-                }
-            });
+            //     const downloadUrl = window.URL.createObjectURL(blob);
+            //     const a = document.createElement('a');
+            //     a.style.display = 'none';
+            //     a.href = downloadUrl;
+            //     a.download = filename;
+            //     document.body.appendChild(a);
+            //     a.click();
+            //     window.URL.revokeObjectURL(downloadUrl);
+            //     document.body.removeChild(a);
+
+            //     $('#exportForm').modal('hide');
+            // })
+            // .catch(errorData => {
+            //     // 5. JIKA GAGAL, tangkap error yang dilempar dan tampilkan
+            //     if (errorData && errorData.errors) {
+            //         $.each(errorData.errors, function(key, value) {
+            //             $('.' + key + '_error').text(value[0]);
+            //             $('#' + key + '_input').addClass('is-invalid');
+            //         });
+            //     } else {
+            //         console.error('Terjadi kesalahan tidak terduga:', errorData.message);                    
+            //     }
+            // });
 
             // Kirim satu permintaan AJAX yang bisa menangani blob atau JSON
             // $.ajax({

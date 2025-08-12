@@ -353,19 +353,19 @@ class PenjualanController extends Controller
         foreach ($dataPenjualan as $penjualan) {
             // --- TULIS HEADER UNTUK SETIAP TRANSAKSI ---
             $sheet->mergeCells('A' . $rowNum . ':B' . $rowNum);
-            $sheet->setCellValue('A' . $rowNum, 'No. Bukti:');
+            $sheet->setCellValue('A' . $rowNum, 'No. Bukti');
             $sheet->setCellValue('C' . $rowNum, $penjualan->no_bukti);
             $sheet->getStyle('A' . $rowNum . ':C' . $rowNum)->getFont()->setBold(true);
             $rowNum++;
 
             $sheet->mergeCells('A' . $rowNum . ':B' . $rowNum);
-            $sheet->setCellValue('A' . $rowNum, 'Tanggal:');
+            $sheet->setCellValue('A' . $rowNum, 'Tanggal');
             // $sheet->setCellValue('C' . $rowNum, $penjualan->tgl_bukti->format('d F Y'));
             $sheet->setCellValue('C' . $rowNum, $penjualan->tgl_bukti->format('d M Y'));
             $rowNum++;
 
             $sheet->mergeCells('A' . $rowNum . ':B' . $rowNum);
-            $sheet->setCellValue('A' . $rowNum, 'Pelanggan:');
+            $sheet->setCellValue('A' . $rowNum, 'Pelanggan');
             $sheet->setCellValue('C' . $rowNum, $penjualan->pelanggan->nama_pelanggan ?? 'N/A');
             $rowNum++;
 
