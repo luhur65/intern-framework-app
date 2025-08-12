@@ -25,14 +25,14 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         Pelanggan::factory(10)->create(); // Create 10 Pelanggan records
-        $penjualans = Penjualan::factory(50)->create(); // Create 50 Penjualan records
-        // Create PenjualanDetail records for each Penjualan
-        // Each Penjualan will have a random number of details between 2 and 10
-        $penjualans->each(function ($penjualan) { 
-            PenjualanDetail::factory(rand(2, 10))->create([
-                'penjualan_id' => $penjualan->id,
-            ]);
-        });
+        // $penjualans = Penjualan::factory(50)->create(); // Create 50 Penjualan records
+        // // Create PenjualanDetail records for each Penjualan
+        // // Each Penjualan will have a random number of details between 2 and 10
+        // $penjualans->each(function ($penjualan) { 
+        //     PenjualanDetail::factory(rand(2, 10))->create([
+        //         'penjualan_id' => $penjualan->id,
+        //     ]);
+        // });
 
 
     }

@@ -152,6 +152,9 @@ class PenjualanController extends Controller
      */
     public function store(StorePenjualanRequest $request): JsonResponse
     {
+
+        // \dd($request);
+
         try {
             // Panggil service untuk menjalankan logika bisnis.
             // $request->validated() akan mengembalikan data yang sudah lolos validasi.

@@ -14,6 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // My Custom Middleware
         $middleware->append(BlockMethodRoute::class);
+
+        // Untuk tes ApacheJMeter
+        $middleware->validateCsrfTokens(except: [
+            '/penjualan', // Tambahkan path rute Anda di sini
+        ]);
+        
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
