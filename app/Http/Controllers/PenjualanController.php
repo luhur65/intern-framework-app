@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePenjualanRequest;
-use App\Interfaces\PenjualanServiceInterface;
+// use App\Interfaces\PenjualanServiceInterface;
 use App\Models\Pelanggan;
 use App\Models\Penjualan;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +16,7 @@ use Exception;
 
 class PenjualanController extends Controller
 {
-    private PenjualanServiceInterface $penjualanService;
+    // private PenjualanServiceInterface $penjualanService;
     protected $gridParams = [];
     protected $filters = [];
 
@@ -26,10 +26,11 @@ class PenjualanController extends Controller
      * service ke dalam controller.
      * Jika ini tidak ada, maka properti $penjualanService akan kosong.
      */
-    public function __construct(PenjualanServiceInterface $penjualanService)
+    // public function __construct(PenjualanServiceInterface $penjualanService)
+    public function __construct()
     {
 
-        $this->penjualanService = $penjualanService;
+        // $this->penjualanService = $penjualanService;
         
         // Inisialisasi parameter grid
         // sidx: field untuk sorting, sord: arah sorting (asc/desc), page: halaman, limit: jumlah data per halaman
@@ -72,7 +73,7 @@ class PenjualanController extends Controller
     {
         try {
             // Panggil service untuk mendapatkan nomor berikutnya
-            $noBukti = $this->penjualanService->getNextNoBukti();
+            $noBukti = Penjualan::getNextNoBukti();
 
             return response()->json(['no_bukti' => $noBukti]);
         } catch (Exception $e) {
@@ -158,7 +159,7 @@ class PenjualanController extends Controller
         try {
             // Panggil service untuk menjalankan logika bisnis.
             // $request->validated() akan mengembalikan data yang sudah lolos validasi.
-            $penjualan = $this->penjualanService->createPenjualan($request->validated());
+            $penjualan = Penjualan::createPenjualan($request->validated());
 
             // panggil method untuk posisi data
             return $this->getGridResponse($request, $penjualan->id);
@@ -180,7 +181,7 @@ class PenjualanController extends Controller
 
         try {
             // Panggil service untuk mengambil dan memformat data
-            $data = $this->penjualanService->getPenjualanForEdit($id);
+            $data = Penjualan::getPenjualanForEdit($id);
 
             // Kembalikan data yang sudah diformat sebagai JSON
             return response()->json($data);
@@ -207,7 +208,7 @@ class PenjualanController extends Controller
     public function update(StorePenjualanRequest $request, string $id): JsonResponse
     {
         try {
-            $penjualan = $this->penjualanService->updatePenjualan($id, $request->validated());
+            $penjualan = Penjualan::updatePenjualan($id, $request->validated());
 
             return $this->getGridResponse($request, $penjualan->id);
 
@@ -232,7 +233,7 @@ class PenjualanController extends Controller
             $idSelanjutnya = Penjualan::getIdTerdekat($this->gridParams, $id);
 
             // 3. Lanjutkan proses penghapusan melalui service
-            $this->penjualanService->deletePenjualan($id);
+            Penjualan::deletePenjualan($id);
 
             // 4. Kembalikan response grid dengan fokus ke ID yang sudah kita dapatkan
             return $this->getGridResponse($request, $idSelanjutnya);

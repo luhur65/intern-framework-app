@@ -21,6 +21,8 @@ class Penjualan extends Model
         'tgl_bukti' => 'date', 
     ];
 
+    private const NO_BUKTI_PREFIX = 'BRG-NO-';
+
     public function pelanggan()
     {
         return $this->belongsTo(Pelanggan::class, 'pelanggan_id');
@@ -41,6 +43,149 @@ class Penjualan extends Model
     public function getFormattedDateAttribute()
     {
         return \Carbon\Carbon::parse($this->tgl_bukti)->format('d-m-Y');
+    }
+
+    /**
+     * Menghasilkan nomor bukti berikutnya yang tersedia menggunakan Query Builder.
+     *
+     * @return string
+     */
+    public function getNextNoBukti(): string
+    {
+        // Cari no_bukti terakhir menggunakan Query Builder dengan filter
+        $lastPenjualan = DB::table('penjualans')
+            ->where('no_bukti', 'like', self::NO_BUKTI_PREFIX . '%')
+            ->orderBy('no_bukti', 'desc')
+            ->first();
+
+        if (!$lastPenjualan) {
+            // Jika tidak ada data sama sekali, mulai dari 1
+            return self::NO_BUKTI_PREFIX . '0001';
+        }
+
+        // Ambil bagian angka dari string (misal: 'BRG-NO-0021' -> '0021')
+        $lastNumber = (int) substr($lastPenjualan->no_bukti, 7);
+
+        // Tambah 1
+        $newNumber = $lastNumber + 1;
+
+        // Format kembali dengan padding nol di depan (misal: 22 -> '0022')
+        return self::NO_BUKTI_PREFIX . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Membuat data penjualan baru dengan nomor bukti yang aman.
+     *
+     * @param array $data Data yang sudah divalidasi.
+     * @return self
+     */
+    public static function createPenjualan(array $data): self
+    {
+        return DB::transaction(function () use ($data) {
+            $lastPenjualan = self::where('no_bukti', 'like', self::NO_BUKTI_PREFIX . '%')
+                ->orderBy('no_bukti', 'desc')
+                ->lockForUpdate()
+                ->first();
+
+            if (!$lastPenjualan) {
+                $newNoBukti = self::NO_BUKTI_PREFIX . '0001';
+            } else {
+                $lastNumber = (int) substr($lastPenjualan->no_bukti, strlen(self::NO_BUKTI_PREFIX));
+                $newNumber  = $lastNumber + 1;
+                $newNoBukti = self::NO_BUKTI_PREFIX . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+            }
+
+            $penjualan = self::create([
+                'no_bukti'     => $newNoBukti,
+                'tgl_bukti'    => date('Y-m-d', strtotime($data['tgl_bukti'])),
+                'pelanggan_id' => $data['nama_pelanggan'],
+            ]);
+
+            foreach ($data['barang'] as $item) {
+                $penjualan->details()->create([
+                    'nama_barang'  => strtoupper($item['nama_barang']),
+                    'qty'          => $item['qty'],
+                    'harga'        => $item['harga'],
+                ]);
+            }
+
+            return $penjualan->load('details');
+        });
+    }
+
+    public static function updatePenjualan(int $id, array $data): self
+    {
+        $penjualan = self::findOrFail($id);
+
+        return DB::transaction(function () use ($penjualan, $data) {
+            $penjualan->update([
+                'tgl_bukti'    => date('Y-m-d', strtotime($data['tgl_bukti'])),
+                'pelanggan_id' => $data['nama_pelanggan'],
+            ]);
+
+            $penjualan->details()->delete();
+
+            foreach ($data['barang'] as $item) {
+                $penjualan->details()->create([
+                    'nama_barang' => strtoupper($item['nama_barang']),
+                    'qty'         => $item['qty'],
+                    'harga'       => $item['harga'],
+                ]);
+            }
+
+            return $penjualan;
+        });
+    }
+
+    /**
+     * Menghapus data penjualan.
+     *
+     * @param int $id ID Penjualan.
+     * @return bool
+     */
+    public static function deletePenjualan(int $id): bool
+    {
+        $penjualan = self::findOrFail($id);
+
+        return DB::transaction(function () use ($penjualan) {
+            $penjualan->details()->delete();
+            return $penjualan->delete();
+        });
+    }
+
+    public static function getPenjualanForEdit(int $id): array
+    {
+        // 1. Ambil data penjualan beserta relasi 'details'-nya.
+        // `with('details')` mencegah N+1 query problem (lebih efisien).
+        // `findOrFail` akan otomatis melempar error 404 jika data tidak ditemukan.
+        $penjualan = self::with('details')->findOrFail($id);
+
+        // 2. Siapkan array barang dengan menghitung totalnya.
+        $barangDetails = [];
+        // $totalKeseluruhan = 0;
+        foreach ($penjualan->details as $detail) {
+            // $subtotal = $detail->qty * $detail->harga;
+            $barangDetails[] = [
+                'nama_barang' => $detail->nama_barang,
+                'qty'         => $detail->qty,
+                'harga'       => $detail->harga,
+                // 'grandtotal'  => $detail->qty * $detail->harga, // Hitung total di sini
+            ];
+
+            // $totalKeseluruhan += $subtotal;
+        }
+
+        // 3. Susun hasil akhir sesuai struktur yang diminta.
+        return [
+            'id'             => $penjualan->id,
+            'no_bukti'       => $penjualan->no_bukti,
+            // Pastikan format tanggal sesuai (Y-m-d)
+            'tgl_bukti'      => $penjualan->tgl_bukti->format('d-m-Y'),
+            // Ambil hanya ID pelanggan sesuai contoh
+            'nama_pelanggan' => (string) $penjualan->pelanggan_id,
+            // 'grandTotal'     => $totalKeseluruhan, // total semua barang
+            'barang'         => $barangDetails,
+        ];
     }
 
     /**
