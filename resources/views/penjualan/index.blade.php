@@ -288,6 +288,7 @@
 
 @push('script')
     <script>
+        let urlAPI = "{{ env('API_URL') }}";
         let modalMode = 'add';
         let dataBarang = [];
         let selectId = null;
@@ -399,8 +400,9 @@
 
         // MASTER GRID
         // Inisialisasi jqGrid untuk master
+        let urlMaster = "penjualan/master";
         $('#jqGrid').jqGrid({
-            url: "/penjualan/master",
+            url: urlAPI + urlMaster,
             mtype: "GET",
             styleUI: 'Bootstrap4',
             iconSet: 'fontAwesome',
