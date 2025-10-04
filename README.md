@@ -1,61 +1,107 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sales Management Application
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This is a web application built with the Laravel framework designed for managing sales transactions. It provides functionalities for creating, reading, updating, and deleting sales records, along with their corresponding details. The application features dynamic data tables with server-side processing for efficient data handling, as well as data export capabilities to Excel and PDF formats.
 
-## About Laravel
+## About The Project
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This project serves as a practical example of building a data-centric application using Laravel. It demonstrates the implementation of a clean architecture by separating concerns into Controllers, Services, Models, and Interfaces. The frontend is powered by jQuery and the jqGrid plugin for interactive data grids, showcasing how to integrate traditional JavaScript libraries with a modern backend framework.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Key Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+*   **CRUD Operations**: Full capabilities to Create, Read, Update, and Delete sales transactions and their line items.
+*   **Server-Side Data Processing**: Utilizes the jqGrid plugin with server-side processing to handle large datasets efficiently.
+*   **Dynamic Filtering and Sorting**: Allows users to search and sort data dynamically in the grids.
+*   **Data Export**: Functionality to export sales data to Excel (.xlsx) and PDF formats.
+*   **Race-Condition Safe Operations**: Uses database transactions and row locking to ensure data integrity during concurrent operations.
+*   **Structured Codebase**: Follows best practices for a structured and maintainable Laravel application.
 
-## Learning Laravel
+## Getting Started
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Prerequisites
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+*   PHP >= 8.2
+*   [Composer](https://getcomposer.org/)
+*   [Node.js & npm](https://nodejs.org/)
+*   A database server (e.g., MySQL, MariaDB).
 
-## Laravel Sponsors
+### Installation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+1.  **Clone the repository**
+    ```sh
+    git clone https://github.com/your-username/your-repository-name.git
+    cd your-repository-name
+    ```
 
-### Premium Partners
+2.  **Install PHP dependencies**
+    ```sh
+    composer install
+    ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+3.  **Install JavaScript dependencies**
+    ```sh
+    npm install
+    ```
 
-## Contributing
+4.  **Set up the environment file**
+    *   Copy the `.env.example` file to `.env`:
+        ```sh
+        cp .env.example .env
+        ```
+    *   Generate an application key:
+        ```sh
+        php artisan key:generate
+        ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+5.  **Configure your database**
+    *   Open the `.env` file and update the `DB_*` variables with your database credentials:
+        ```
+        DB_CONNECTION=mysql
+        DB_HOST=127.0.0.1
+        DB_PORT=3306
+        DB_DATABASE=your_database_name
+        DB_USERNAME=your_database_user
+        DB_PASSWORD=your_database_password
+        ```
 
-## Code of Conduct
+6.  **Run database migrations and seeders**
+    *   The seeder will populate the `pelanggans` (customers) table with initial data.
+    ```sh
+    php artisan migrate --seed
+    ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+7.  **Compile front-end assets**
+    ```sh
+    npm run dev
+    ```
 
-## Security Vulnerabilities
+8.  **Serve the application**
+    ```sh
+    php artisan serve
+    ```
+    The application will be available at `http://127.0.0.1:8000`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Usage
 
-## License
+Navigate to `http://127.0.0.1:8000/penjualan` in your browser to access the main sales management interface.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+*   **View Sales**: The main grid displays a list of all sales transactions.
+*   **View Details**: Click on a sale in the master grid to view its line items in the detail grid below.
+*   **Add a Sale**: Click the "Add" button to open a modal form for creating a new sale. You can add multiple items before saving.
+*   **Edit a Sale**: Select a sale and click the "Edit" button to modify its details.
+*   **Delete a Sale**: Select a sale and click the "Delete" button to remove it.
+*   **Export Data**: Use the "Export" button to generate an Excel or PDF report of the sales data. You can specify a range of records to export.
+
+## Application Structure Overview
+
+The application follows a standard Laravel project structure, with key logic organized as follows:
+
+*   `app/Http/Controllers`: Controllers handle the HTTP requests. `PenjualanController` is the main controller for sales, while `PenjualanDetailController` provides data for the detail grid.
+*   `app/Models`: Eloquent models (`Penjualan`, `PenjualanDetail`, `Pelanggan`) define the database schema and relationships. They also contain query scopes and static methods for complex data retrieval.
+*   `app/Services`: The `PenjualanService` contains the core business logic for sales management, keeping the controllers lean.
+*   `app/Interfaces`: The `PenjualanServiceInterface` defines the contract for the sales service, promoting a decoupled architecture.
+*   `app/Http/Requests`: Form requests like `StorePenjualanRequest` handle validation of incoming data.
+*   `resources/views/penjualan`: The Blade template for the main sales interface.
+*   `public/js`: Contains the custom JavaScript logic for handling the jqGrid, modals, and AJAX requests.
+*   `routes/web.php`: Defines the application's routes.

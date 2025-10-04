@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePenjualanRequest;
-// use App\Interfaces\PenjualanServiceInterface;
 use App\Models\Pelanggan;
 use App\Models\Penjualan;
 use Illuminate\Http\JsonResponse;
@@ -12,29 +11,38 @@ use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Exception;
-// use Illuminate\Support\Facades\DB as MySQLDB;
 
+/**
+ * Class PenjualanController
+ *
+ * Handles all sales-related requests, including CRUD operations, data export,
+ * and providing data for jqGrid.
+ *
+ * @package App\Http\Controllers
+ */
 class PenjualanController extends Controller
 {
-    // private PenjualanServiceInterface $penjualanService;
+    /**
+     * @var array Holds the parameters for the jqGrid.
+     */
     protected $gridParams = [];
+
+    /**
+     * @var array Holds the filter rules from the request.
+     */
     protected $filters = [];
 
     /**
-     * Constructor ini SANGAT PENTING.
-     * Ia akan otomatis dijalankan oleh Laravel untuk "menyuntikkan"
-     * service ke dalam controller.
-     * Jika ini tidak ada, maka properti $penjualanService akan kosong.
+     * PenjualanController constructor.
+     *
+     * Initializes grid parameters from the current request. This includes settings for
+     * sorting, pagination, and search filters.
      */
-    // public function __construct(PenjualanServiceInterface $penjualanService)
     public function __construct()
     {
-
-        // $this->penjualanService = $penjualanService;
-        
-        // Inisialisasi parameter grid
-        // sidx: field untuk sorting, sord: arah sorting (asc/desc), page: halaman, limit: jumlah data per halaman
-        // start: offset untuk pagination, global_search: untuk pencarian global, search: untuk filter pencarian
+        // Initialize grid parameters
+        // sidx: field for sorting, sord: sorting direction (asc/desc), page: page number, limit: number of records per page
+        // start: offset for pagination, global_search: for global search, _search: for filter-based search
         $this->gridParams = [
             'sidx'   => \request()->input('sidx', 'id'),
             'sord'   => \request()->input('sord', 'asc'),
@@ -42,15 +50,13 @@ class PenjualanController extends Controller
             'limit'  => (int) \request()->input('rows', 10),
         ];
 
-        // Hitung start 
+        // Calculate start
         $this->gridParams['start'] = $this->gridParams['limit'] * ($this->gridParams['page'] - 1);
 
         $this->gridParams['global_search'] = \request()->input('global_search', '');
         $this->gridParams['_search'] = \request()->input('_search', 'false');
 
         if (request()->input('_search') == 'true') {
-            // echo "search true";
-            // $this->gridParams['filters'] = \request()->input('filters', []);
             $filterJson = request()->input('filters');
             $decoded = json_decode($filterJson, true);
             if (isset($decoded['rules'])) {
@@ -59,63 +65,75 @@ class PenjualanController extends Controller
 
             $this->gridParams['filters'] = $this->filters;
         }
-
-        // dd($this->gridParams);
-
     }
 
     /**
-     * Generate no bukti
-     * 
-     * @return jsonResponse
+     * Generates a new unique proof number for a sales transaction.
+     *
+     * This method calls the model to get the next available proof number
+     * and returns it as a JSON response.
+     *
+     * @return JsonResponse A JSON response containing the new proof number or an error message.
      */
     public function generateNoBukti(): JsonResponse
     {
         try {
-            // Panggil service untuk mendapatkan nomor berikutnya
+            // Call the service to get the next number
             $noBukti = Penjualan::getNextNoBukti();
 
             return response()->json(['no_bukti' => $noBukti]);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Gagal menghasilkan nomor bukti.'], 500);
+            return response()->json(['error' => 'Failed to generate proof number.'], 500);
         }
     }
 
     /**
-     * Helper method untuk mengambil data grid dan mengembalikannya sebagai JSON.
+     * Helper method to retrieve grid data and return it as a JSON response.
      *
-     * @param Request $request Request saat ini untuk mengambil parameter grid.
-     * @param int|null $focusId ID dari baris yang ingin disorot/difokuskan.
-     * @return JsonResponse
+     * This method centralizes the logic for fetching paginated and sorted data
+     * for the jqGrid, optionally focusing on a specific row ID.
+     *
+     * @param Request $request The current HTTP request to get grid parameters.
+     * @param int|null $focusId The ID of the row to be focused or highlighted.
+     * @return JsonResponse A JSON response containing the paginated data for the grid.
      */
     private function getGridResponse(Request $request, ?int $focusId): JsonResponse
     {
-        // Ambil parameter untuk sorting dan paging dari request
+        // Get parameters for sorting and paging from the request
         $this->gridParams['sidx'] = $request->input('sortname', $this->gridParams['sidx']);
         $this->gridParams['sord'] = $request->input('sortorder', $this->gridParams['sord']);
-        // 'rows' adalah nama parameter umum untuk jumlah baris per halaman di jqGrid
+        // 'rows' is a common parameter name for rows per page in jqGrid
         $this->gridParams['limit'] = $request->input('rows', $this->gridParams['limit']);
 
-        // Panggil metode paginasi dengan ID yang akan difokuskan
+        // Call the pagination method with the ID to focus on
         $pageData = Penjualan::getPenjualanPagination($this->gridParams, $focusId);
 
         return response()->json($pageData);
     }
 
     /**
-     * Display a listing of the resource.
+     * Display the main sales management view.
+     *
+     * This method returns the primary view for sales, which includes the jqGrid
+     * for displaying sales data. It also passes necessary data, like the list
+     * of customers, to the view.
+     *
+     * @return \Illuminate\View\View The sales index view.
      */
     public function index()
     {
-        // $urlMaster = route('penjualan.master');
-        // $urlDetail = route('penjualan.detail.getDetail');
-        // $querySQL = Penjualan::query()->gridMaster($this->gridParams)->toSql();
-        // $generateNoBukti = $this->penjualanService->getNextNoBukti();
         $pelanggans = Pelanggan::getDataPelanggan();
         return \view('penjualan.index', \compact('pelanggans'));
     }
+
     /**
-     * Get master data for Penjualan.
+     * Get master data for the Penjualan (Sales) jqGrid.
+     *
+     * This method fetches the master sales data based on the grid parameters
+     * (sorting, filtering, searching) and returns it as a JSON response
+     * suitable for populating the jqGrid.
+     *
+     * @return JsonResponse A JSON response containing the master sales data.
      */
     public function master()
     {
@@ -123,8 +141,6 @@ class PenjualanController extends Controller
         $this->gridParams['_search'] = \request()->input('_search', 'false');
 
         if (request()->input('_search') == 'true') {
-            // echo "search true";
-            // $this->gridParams['filters'] = \request()->input('filters', []);
             $filterJson = request()->input('filters');
             $decoded = json_decode($filterJson, true);
             if (isset($decoded['rules'])) {
@@ -139,6 +155,8 @@ class PenjualanController extends Controller
 
     /**
      * Show the form for creating a new resource.
+     *
+     * @return void
      */
     public function create()
     {
@@ -146,56 +164,66 @@ class PenjualanController extends Controller
     }
 
     /**
-     * Simpan data penjualan baru.
+     * Validates and persists a new sale and its line items.
      *
-     * @param StorePenjualanRequest $request
-     * @return JsonResponse
+     * This method uses the StorePenjualanRequest for validation, then calls the
+     * model to create the sales record. On success, it returns a JSON response
+     * containing the updated grid data, with the new record focused.
+     *
+     * @param StorePenjualanRequest $request The request object containing validated sales data.
+     * @return JsonResponse A JSON response with the updated grid data.
      */
     public function store(StorePenjualanRequest $request): JsonResponse
     {
-
-        // \dd($request);
-
         try {
-            // Panggil service untuk menjalankan logika bisnis.
-            // $request->validated() akan mengembalikan data yang sudah lolos validasi.
+            // Call business logic from the model.
+            // $request->validated() returns the data that has passed validation.
             $penjualan = Penjualan::createPenjualan($request->validated());
 
-            // panggil method untuk posisi data
+            // Call the method to get the position of the data
             return $this->getGridResponse($request, $penjualan->id);
 
         } catch (\Exception $e) {
-            // Tangkap exception dari service dan kembalikan response error
+            // Catch exceptions from the service and return an error response
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified sales resource.
+     *
+     * Retrieves and returns the data for a specific sale, formatted for editing
+     * in a form.
+     *
+     * @param string $id The ID of the sales record to retrieve.
+     * @return JsonResponse A JSON response containing the sales data or an error.
      */
     public function show(string $id)
     {
         if ($id === null) {
-            \abort(403, 'Tidak bisa diakses');
+            \abort(403, 'Cannot be accessed');
         }
 
         try {
-            // Panggil service untuk mengambil dan memformat data
+            // Call the model to retrieve and format the data
             $data = Penjualan::getPenjualanForEdit($id);
 
-            // Kembalikan data yang sudah diformat sebagai JSON
+            // Return the formatted data as JSON
             return response()->json($data);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            // Tangani jika data tidak ditemukan secara spesifik
-            return response()->json(['error' => 'Data tidak ditemukan.'], 404);
+            // Handle if data is not found specifically
+            return response()->json(['error' => 'Data not found.'], 404);
         } catch (\Exception $e) {
-            // Tangani error umum lainnya
+            // Handle other general errors
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
     /**
      * Show the form for editing the specified resource.
+     *
+     * @param string $id The ID of the resource to edit.
+     * @return void
      */
     public function edit(string $id)
     {
@@ -203,7 +231,15 @@ class PenjualanController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified sales resource in storage.
+     *
+     * This method validates the incoming request data, updates the specified
+     * sales record, and returns a JSON response with the updated grid data,
+     * focusing on the updated record.
+     *
+     * @param StorePenjualanRequest $request The request object containing validated sales data.
+     * @param string $id The ID of the sales record to update.
+     * @return JsonResponse A JSON response with the updated grid data.
      */
     public function update(StorePenjualanRequest $request, string $id): JsonResponse
     {
@@ -218,24 +254,30 @@ class PenjualanController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified sales resource from storage.
+     *
+     * This method deletes a sales record. Before deletion, it determines the
+     * next record to focus on in the grid to provide a smooth user experience.
+     * After deletion, it returns the updated grid data.
+     *
+     * @param Request $request The current HTTP request.
+     * @param string $id The ID of the sales record to delete.
+     * @return JsonResponse A JSON response with the updated grid data.
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
-        // \dd($request->all());
         try {
-
-            // 2. Panggil metode statis LANGSUNG dari Model Penjualan
-            //    untuk menentukan ID fokus berikutnya.
+            // 1. Call the static method DIRECTLY from the Penjualan Model
+            //    to determine the next focus ID.
             $this->gridParams['sidx'] = $request->input('sortname', $this->gridParams['sidx']);
             $this->gridParams['sord'] = $request->input('sortorder', $this->gridParams['sord']);
             $this->gridParams['limit'] = (int) $request->input('rows', $this->gridParams['limit']);
             $idSelanjutnya = Penjualan::getIdTerdekat($this->gridParams, $id);
 
-            // 3. Lanjutkan proses penghapusan melalui service
+            // 2. Continue the deletion process through the model
             Penjualan::deletePenjualan($id);
 
-            // 4. Kembalikan response grid dengan fokus ke ID yang sudah kita dapatkan
+            // 3. Return the grid response with focus on the ID we got
             return $this->getGridResponse($request, $idSelanjutnya);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -243,85 +285,73 @@ class PenjualanController extends Controller
     }
 
     /**
-     * Memvalidasi input untuk permintaan ekspor via AJAX.
+     * Validates the input for an export request via AJAX.
      *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * This private helper method checks if the start and end ranges for the export
+     * are valid based on the total number of records.
+     *
+     * @param Request $request The HTTP request containing the export parameters.
+     * @return JsonResponse|true Returns a JSON response with validation errors or true if valid.
      */
     private function validateExport(Request $request)
     {
-        // Hitung total record berdasarkan filter yang dikirim untuk aturan 'max'
-        // $totalRecords = Penjualan::getDataForExport($request->all())->count();
+        // Calculate total records based on the filter sent for the 'max' rule
         $totalRecords = $request->input('record', 0);
 
-        // Terapkan aturan validasi
+        // Apply validation rules
         $validator = Validator::make($request->all(), [
             'start_range' => ['required', 'integer', 'min:1', 'lte:end_range'],
             'end_range'   => ['required', 'integer', 'min:1', 'max:' . $totalRecords],
         ], [
-            // Pesan error kustom
-            'start_range.required' => 'Kolom Awal wajib diisi.',
-            'start_range.min'      => 'Harus dimulai dari angka 1 atau lebih.',
-            'start_range.lte'      => 'Nilai awal tidak boleh lebih besar dari akhir.',
-            'end_range.required'   => 'Kolom Akhir wajib diisi.',
-            'end_range.max'        => 'Maksimal hanya sampai ' . $totalRecords . ' data.',
+            // Custom error messages
+            'start_range.required' => 'Start range is required.',
+            'start_range.min'      => 'Must start from 1 or more.',
+            'start_range.lte'      => 'Start value cannot be greater than end value.',
+            'end_range.required'   => 'End range is required.',
+            'end_range.max'        => 'The maximum is only up to ' . $totalRecords . ' records.',
         ]);
 
-        // Jika validasi gagal, kembalikan respons JSON 422
+        // If validation fails, return a 422 JSON response
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Jika berhasil, kirim respons sukses
-        // return response()->json(['message' => 'Validasi berhasil!']);
+        // If successful, return true
         return true;
     }
 
     /**
-     * Menangani permintaan untuk mengekspor data ke berbagai format (Excel, PDF, dll).
+     * Handles the request to export data to various formats (Excel, PDF, etc.).
      *
-     * @param Request $request
-     * @param string $mode Format ekspor ('excel', 'pdf', dll).
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|void
+     * This method validates the export parameters and then delegates the export
+     * process to the appropriate method based on the requested format.
+     *
+     * @param Request $request The HTTP request containing export parameters.
+     * @param string $mode The desired export format ('excel', 'pdf', etc.).
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\JsonResponse|void
      */
     public function export(Request $request, string $mode)
     {
-        // Cek apakah ada payload JSON yang dikirim.
-        // empty() akan menangani kasus di mana body kosong ({}) atau tidak ada sama sekali.
-        // if (empty($request->json()->all())) {
-        //     abort(403, "Akses tidak sah. Permintaan tidak berisi data.");
-        
-        // parameter record dari request, sama seperti di grid
+        // record parameter from the request, same as in the grid
         $totalRecords = $request->json('record', 0);
-        // \dd($request->json()->all());
-        // \dd($totalRecords);
 
-        // Terapkan aturan validasi
+        // Apply validation rules
         $validator = Validator::make($request->json()->all(), [
             'start_range' => ['required', 'integer', 'min:1', 'lte:end_range'],
             'end_range'   => ['required', 'integer', 'min:1', 'max:' . $totalRecords],
         ], [
-            // Pesan error kustom
-            'start_range.required' => 'Kolom Awal wajib diisi.',
-            'start_range.min'      => 'Harus dimulai dari angka 1 atau lebih.',
-            'start_range.lte'      => 'Nilai awal tidak boleh lebih besar dari akhir.',
-            'end_range.required'   => 'Kolom Akhir wajib diisi.',
-            'end_range.max'        => 'Maksimal hanya sampai ' . $totalRecords . ' data.',
+            // Custom error messages
+            'start_range.required' => 'Start range is required.',
+            'start_range.min'      => 'Must start from 1 or more.',
+            'start_range.lte'      => 'Start value cannot be greater than end value.',
+            'end_range.required'   => 'End range is required.',
+            'end_range.max'        => 'The maximum is only up to ' . $totalRecords . ' records.',
         ]);
 
-        // Jika validasi gagal, kembalikan respons JSON 422
+        // If validation fails, return a 422 JSON response
         if ($validator->fails()) {
-
             return response()->json(['errors' => $validator->errors()], 422);
-            
-            // return response()->json(['errors' => $validator->errors()], 422)
-            //     ->withHeaders([
-            //         'X-Error-Type' => 'Validation',
-            //         'Content-Type' => 'application/json',
-            //     ]);
         }
-
-        // \dd($params);
 
         $params = $request->json()->all();
 
@@ -330,76 +360,82 @@ class PenjualanController extends Controller
 
         } else if ($mode === 'pdf') {
             return $this->pdf();
-            // abort(501, 'Export PDF belum diimplementasikan.');
-
         }
-        
     }
 
+    /**
+     * Generates and streams an Excel file of the sales report.
+     *
+     * This private helper method fetches the sales data based on the provided
+     * parameters, creates an Excel spreadsheet using PhpSpreadsheet, and streams
+     * the file to the user for download.
+     *
+     * @param array $params The parameters for filtering the export data.
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
     private function excel(array $params)
     {
-        // 2. Ambil data dari database MENGGUNAKAN LOGIKA FILTER YANG SAMA
-        // Kita akan buat metode baru di model untuk ini, agar tidak ada paginasi
+        // 1. Retrieve data from the database USING THE SAME FILTER LOGIC
+        // We will create a new method in the model for this, so there is no pagination
         $dataPenjualan = Penjualan::getDataForExport($params);
 
-        // 3. Buat objek Spreadsheet baru
+        // 2. Create a new Spreadsheet object
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Laporan Penjualan');
+        $sheet->setTitle('Sales Report');
 
-        // 4. Tulis Header Tabel
-        $rowNum = 1; // Mulai dari baris pertama
+        // 3. Write Table Header
+        $rowNum = 1; // Start from the first row
 
-        // 2. Loop untuk setiap transaksi PENJUALAN
+        // 4. Loop for each SALES transaction
         foreach ($dataPenjualan as $penjualan) {
-            // --- TULIS HEADER UNTUK SETIAP TRANSAKSI ---
+            // --- WRITE HEADER FOR EACH TRANSACTION ---
             $sheet->mergeCells('A' . $rowNum . ':B' . $rowNum);
-            $sheet->setCellValue('A' . $rowNum, 'No. Bukti');
+            $sheet->setCellValue('A' . $rowNum, 'Proof No.');
             $sheet->setCellValue('C' . $rowNum, $penjualan->no_bukti);
             $sheet->getStyle('A' . $rowNum . ':C' . $rowNum)->getFont()->setBold(true);
             $rowNum++;
 
             $sheet->mergeCells('A' . $rowNum . ':B' . $rowNum);
-            $sheet->setCellValue('A' . $rowNum, 'Tanggal');
-            // $sheet->setCellValue('C' . $rowNum, $penjualan->tgl_bukti->format('d F Y'));
+            $sheet->setCellValue('A' . $rowNum, 'Date');
             $sheet->setCellValue('C' . $rowNum, $penjualan->tgl_bukti->format('d M Y'));
             $rowNum++;
 
             $sheet->mergeCells('A' . $rowNum . ':B' . $rowNum);
-            $sheet->setCellValue('A' . $rowNum, 'Pelanggan');
+            $sheet->setCellValue('A' . $rowNum, 'Customer');
             $sheet->setCellValue('C' . $rowNum, $penjualan->pelanggan->nama_pelanggan ?? 'N/A');
             $rowNum++;
 
-            // Beri spasi sebelum tabel detail
+            // Add a space before the detail table
             $rowNum++;
 
-            // --- TULIS HEADER UNTUK TABEL DETAIL ---
-            $sheet->setCellValue('B' . $rowNum, 'Nama Barang');
+            // --- WRITE HEADER FOR DETAIL TABLE ---
+            $sheet->setCellValue('B' . $rowNum, 'Item Name');
             $sheet->setCellValue('C' . $rowNum, 'Qty');
-            $sheet->setCellValue('D' . $rowNum, 'Harga');
+            $sheet->setCellValue('D' . $rowNum, 'Price');
             $sheet->setCellValue('E' . $rowNum, 'Total');
             $sheet->getStyle('B' . $rowNum . ':E' . $rowNum)->getFont()->setBold(true);
             $rowNum++;
 
-            $startRowDetail = $rowNum; // Tandai baris awal detail
+            $startRowDetail = $rowNum; // Mark the starting row of the detail
 
-            // 3. Loop untuk setiap DETAIL BARANG di dalam penjualan
+            // 5. Loop for each ITEM DETAIL within the sale
             foreach ($penjualan->details as $detail) {
                 $sheet->setCellValue('B' . $rowNum, $detail->nama_barang);
                 $sheet->setCellValue('C' . $rowNum, $detail->qty);
                 $sheet->setCellValue('D' . $rowNum, $detail->harga);
-                // Gunakan formula Excel untuk menghitung total per baris
+                // Use an Excel formula to calculate the total per row
                 $sheet->setCellValue('E' . $rowNum, "=C" . $rowNum . "*D" . $rowNum);
 
-                // Terapkan format angka
+                // Apply number formatting
                 $sheet->getStyle('C' . $rowNum)->getNumberFormat()->setFormatCode('#,##0');
                 $sheet->getStyle('D' . $rowNum . ':E' . $rowNum)->getNumberFormat()->setFormatCode('"Rp "#,##0.00');
 
                 $rowNum++;
             }
-            $endRowDetail = $rowNum - 1; // Tandai baris akhir detail
+            $endRowDetail = $rowNum - 1; // Mark the ending row of the detail
 
-            // --- TULIS GRAND TOTAL ---
+            // --- WRITE GRAND TOTAL ---
             if ($startRowDetail <= $endRowDetail) {
                 $formulaGrandTotal = "=SUM(E" . $startRowDetail . ":E" . $endRowDetail . ")";
                 $sheet->mergeCells('B' . $rowNum . ':D' . $rowNum);
@@ -410,20 +446,20 @@ class PenjualanController extends Controller
                 $sheet->getStyle('B' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
             }
 
-            // Beri 2 baris spasi sebagai pemisah antar data penjualan
+            // Add 2 space rows as a separator between sales data
             $rowNum += 2;
         }
 
-        // 6. Atur lebar kolom secara otomatis
+        // 6. Set column width automatically
         foreach (range('A', 'H') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
 
-        // 7. Siapkan Writer dan kirim file ke browser
+        // 7. Prepare Writer and send the file to the browser
         $writer = new Xlsx($spreadsheet);
-        $fileName = 'laporan-penjualan-' . date('Ymd_His') . '.xlsx';
+        $fileName = 'sales-report-' . date('Ymd_His') . '.xlsx';
 
-        // Kembalikan sebagai StreamedResponse agar bisa ditangkap sebagai blob
+        // Return as StreamedResponse so it can be caught as a blob
         return response()->stream(
             function () use ($writer) {
                 $writer->save('php://output');
@@ -434,45 +470,44 @@ class PenjualanController extends Controller
                 'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
             ]
         );
-
-        // // Set header HTTP untuk memicu unduhan
-        // header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        // header('Content-Disposition: attachment; filename="' . $fileName . '"');
-        // header('Cache-Control: max-age=0');
-
-        // // Tulis file ke output PHP
-        // $writer->save('php://output');
-        // exit();
     }
 
     /**
-     * Menampilkan halaman laporan PDF.
+     * Displays the PDF report page.
      *
-     * @param Request $request
-     * @return \Illuminate\View\View
+     * This method fetches the necessary data for the PDF report based on request
+     * parameters and passes it to a view that renders the Stimulsoft report viewer.
+     *
+     * @param Request $request The HTTP request containing filter parameters.
+     * @return \Illuminate\View\View The view for displaying the PDF report.
      */
     public function showPdfReport(Request $request)
     {
-        // jika tidak ada param|start_range dan end_range, kasih 404
+        // if there are no start_range and end_range params, return 403
         if (!$request->filled('start_range') && !$request->filled('end_range')) {
-            abort(403, "Halaman tidak bisa diakses!");
+            abort(403, "Page cannot be accessed!");
         }
 
-        // Ambil semua parameter filter dari request
+        // Get all filter parameters from the request
         $params = $request->all();
 
-        // Ambil data yang sudah ditransformasi untuk Stimulsoft
+        // Get the transformed data for Stimulsoft
         $laporanData = $this->getPdfData($params);
 
-        // Kembalikan view Blade dan kirim data laporan ke dalamnya
+        // Return the Blade view and send the report data into it
         return view('report.index', [
-            'laporanJSON' => json_encode($laporanData) // Kirim sebagai string JSON
+            'laporanJSON' => json_encode($laporanData) // Send as a JSON string
         ]);
     }
 
     /**
-     * Metode helper untuk mengambil dan memformat data PDF.
-     * (Ini adalah isi dari metode pdf() Anda sebelumnya)
+     * Helper method to retrieve and format data for the PDF report.
+     *
+     * This method fetches sales data and transforms it into a "flat" structure
+     * suitable for use with the Stimulsoft reporting tool.
+     *
+     * @param array $params The parameters for filtering the report data.
+     * @return array The formatted data for the PDF report.
      */
     private function getPdfData(array $params)
     {
@@ -495,38 +530,19 @@ class PenjualanController extends Controller
         return ['DataPenjualan' => $laporanData];
     }
 
+    /**
+     * Prepares data for PDF export.
+     *
+     * This method is intended to handle the server-side logic for PDF generation.
+     * Currently, it returns a simple success message.
+     *
+     * @return JsonResponse A JSON response indicating the status.
+     */
     private function pdf()
     {
-        // 1. Ambil data yang sudah dikelompokkan menggunakan metode Eloquent
-        // $dataPenjualan = Penjualan::getDataForExport($params);
-
-        // // 2. Transformasi data menjadi struktur "datar" yang dibutuhkan
-        // $laporanData = [];
-        // foreach ($dataPenjualan as $penjualan) {
-        //     // Lewati penjualan yang mungkin tidak memiliki detail
-        //     if ($penjualan->details->isEmpty()) {
-        //         continue;
-        //     }
-
-        //     foreach ($penjualan->details as $detail) {
-        //         // Buat satu baris lengkap yang menggabungkan data master dan detail
-        //         $laporanData[] = [
-        //             'id_penjualan'   => $penjualan->id,
-        //             'no_bukti'       => $penjualan->no_bukti,
-        //             'tgl_bukti'      => $penjualan->tgl_bukti->format('d-m-Y'),
-        //             'nama_pelanggan' => $penjualan->pelanggan->nama_pelanggan ?? 'N/A',
-        //             'nama_barang'    => $detail->nama_barang,
-        //             'qty'            => (float)$detail->qty,
-        //             'harga'          => (float)$detail->harga,
-        //         ];
-        //     }
-        // }
-
-        // 3. Kembalikan data yang sudah ditransformasi sebagai JSON
-        // Strukturnya disesuaikan agar cocok dengan kebutuhan Stimulsoft
+        // The structure is adjusted to match Stimulsoft's needs
         return response()->json([
             'message' => 'Ok'
         ]);
     }
-
 }

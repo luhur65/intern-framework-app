@@ -7,32 +7,83 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 
+/**
+ * Class Penjualan
+ *
+ * Represents the 'penjualans' table. This model is central to managing sales
+ * transactions, their details, and related business logic like generating
+ * proof numbers and handling data for grids and exports.
+ *
+ * @package App\Models
+ * @property int $id
+ * @property string $no_bukti
+ * @property \Illuminate\Support\Carbon $tgl_bukti
+ * @property int $pelanggan_id
+ * @property-read \App\Models\Pelanggan $pelanggan
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\PenjualanDetail[] $details
+ * @property-read float $total
+ * @property-read string $formatted_date
+ */
 class Penjualan extends Model
 {
     /** @use HasFactory<\Database\Factories\PenjualanFactory> */
     use HasFactory;
 
-    // protected $table = 'penjualans';
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = ['no_bukti', 'tgl_bukti', 'pelanggan_id'];
-    // protected $primaryKey = 'id_penjualan';
+
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
     public $timestamps = false;
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'tgl_bukti' => 'date', 
     ];
 
+    /**
+     * The prefix for the sales proof number.
+     *
+     * @var string
+     */
     private const NO_BUKTI_PREFIX = 'BRG-NO-';
 
+    /**
+     * Get the customer associated with the sale.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function pelanggan()
     {
         return $this->belongsTo(Pelanggan::class, 'pelanggan_id');
     }
 
+    /**
+     * Get the details (line items) for the sale.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function details()
     {
         return $this->hasMany(PenjualanDetail::class, 'penjualan_id');
     }
 
+    /**
+     * Accessor for the total amount of the sale.
+     *
+     * @return float The sum of (qty * harga) for all details.
+     */
     public function getTotalAttribute()
     {
         return $this->details->sum(function ($detail) {
@@ -40,17 +91,22 @@ class Penjualan extends Model
         });
     }
 
+    /**
+     * Accessor for the formatted transaction date.
+     *
+     * @return string The date formatted as 'd-m-Y'.
+     */
     public function getFormattedDateAttribute()
     {
         return \Carbon\Carbon::parse($this->tgl_bukti)->format('d-m-Y');
     }
 
     /**
-     * Menghasilkan nomor bukti berikutnya yang tersedia menggunakan Query Builder.
+     * Generates the next available proof number using Query Builder.
      *
-     * @return string
+     * @return string The next unique proof number.
      */
-    public function getNextNoBukti(): string
+    public static function getNextNoBukti(): string
     {
         // Cari no_bukti terakhir menggunakan Query Builder dengan filter
         $lastPenjualan = DB::table('penjualans')
@@ -64,7 +120,7 @@ class Penjualan extends Model
         }
 
         // Ambil bagian angka dari string (misal: 'BRG-NO-0021' -> '0021')
-        $lastNumber = (int) substr($lastPenjualan->no_bukti, 7);
+        $lastNumber = (int) substr($lastPenjualan->no_bukti, strlen(self::NO_BUKTI_PREFIX));
 
         // Tambah 1
         $newNumber = $lastNumber + 1;
@@ -74,10 +130,10 @@ class Penjualan extends Model
     }
 
     /**
-     * Membuat data penjualan baru dengan nomor bukti yang aman.
+     * Creates a new sales record with a race-condition-safe proof number.
      *
-     * @param array $data Data yang sudah divalidasi.
-     * @return self
+     * @param array $data The validated data from the request.
+     * @return self The newly created Penjualan instance with its details.
      */
     public static function createPenjualan(array $data): self
     {
@@ -113,6 +169,13 @@ class Penjualan extends Model
         });
     }
 
+    /**
+     * Updates an existing sales record and its details.
+     *
+     * @param int $id The ID of the sale to update.
+     * @param array $data The new, validated data.
+     * @return self The updated Penjualan instance.
+     */
     public static function updatePenjualan(int $id, array $data): self
     {
         $penjualan = self::findOrFail($id);
@@ -138,10 +201,10 @@ class Penjualan extends Model
     }
 
     /**
-     * Menghapus data penjualan.
+     * Deletes a sales record and its associated details.
      *
-     * @param int $id ID Penjualan.
-     * @return bool
+     * @param int $id The ID of the sale to delete.
+     * @return bool True on success.
      */
     public static function deletePenjualan(int $id): bool
     {
@@ -153,54 +216,43 @@ class Penjualan extends Model
         });
     }
 
+    /**
+     * Retrieves a single sale and formats it for the edit form.
+     *
+     * @param int $id The ID of the sale to retrieve.
+     * @return array The formatted sales data.
+     */
     public static function getPenjualanForEdit(int $id): array
     {
-        // 1. Ambil data penjualan beserta relasi 'details'-nya.
-        // `with('details')` mencegah N+1 query problem (lebih efisien).
-        // `findOrFail` akan otomatis melempar error 404 jika data tidak ditemukan.
         $penjualan = self::with('details')->findOrFail($id);
 
-        // 2. Siapkan array barang dengan menghitung totalnya.
         $barangDetails = [];
-        // $totalKeseluruhan = 0;
         foreach ($penjualan->details as $detail) {
-            // $subtotal = $detail->qty * $detail->harga;
             $barangDetails[] = [
                 'nama_barang' => $detail->nama_barang,
                 'qty'         => $detail->qty,
                 'harga'       => $detail->harga,
-                // 'grandtotal'  => $detail->qty * $detail->harga, // Hitung total di sini
             ];
-
-            // $totalKeseluruhan += $subtotal;
         }
 
-        // 3. Susun hasil akhir sesuai struktur yang diminta.
         return [
             'id'             => $penjualan->id,
             'no_bukti'       => $penjualan->no_bukti,
-            // Pastikan format tanggal sesuai (Y-m-d)
             'tgl_bukti'      => $penjualan->tgl_bukti->format('d-m-Y'),
-            // Ambil hanya ID pelanggan sesuai contoh
             'nama_pelanggan' => (string) $penjualan->pelanggan_id,
-            // 'grandTotal'     => $totalKeseluruhan, // total semua barang
             'barang'         => $barangDetails,
         ];
     }
 
     /**
-     * Scope a query to get grid data - versi Query Builder.
-     * Tetap mengembalikan data paginasi seperti versi Eloquent.
-     * Ini bukan chunking, ini tetap paginasi.
+     * Fetches, filters, and paginates data for the master jqGrid using Query Builder.
      *
-     * @param \Illuminate\Database\Query\Builder $query (sebenarnya tidak digunakan karena kita bikin query baru)
-     * @param array $params
-     * @return array
+     * @param array $params An array of parameters for sorting, filtering, and pagination.
+     * @param bool $limitOn Whether to apply pagination limits. If false, returns all matching IDs.
+     * @return array An array formatted for jqGrid or an array of IDs.
      */
     public static function getGridMaster(array $params, $limitOn = true) 
     {
-        
-
         $baseQuery = DB::table('penjualans')
             ->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id')
             ->select(
@@ -208,18 +260,14 @@ class Penjualan extends Model
                 'penjualans.no_bukti',
                 'penjualans.tgl_bukti',
                 'pelanggans.nama_pelanggan'
-                // Total akan dihitung terpisah
             );
 
-
-        // --- Pencarian ---
         $globalSearch = $params['global_search'] ?? '';
         $search = $params['_search'] ?? 'false';
 
         if ($globalSearch) {
             $baseQuery->where(function ($q) use ($globalSearch) {
                 $q->where('penjualans.no_bukti', 'like', "%{$globalSearch}%")
-                    // ->orWhere('penjualans.tgl_bukti', 'like', "%{$globalSearch}%")
                     ->orWhereRaw("DATE_FORMAT(penjualans.tgl_bukti, '%d-%m-%Y') LIKE ?", ["%{$globalSearch}%"])
                     ->orWhere('pelanggans.nama_pelanggan', 'like', "%{$globalSearch}%");
             });
@@ -227,28 +275,20 @@ class Penjualan extends Model
 
         if ($search == 'true') {
             $filters = $params['filters'] ?? [];
-            // Asumsi $filters adalah array PHP, bukan JSON string
             if (!empty($filters)) {
-
-                // Jika filter dari url/get
                 if (is_string($params['filters'])) {
                     $filtersJSON = \json_decode($params['filters'], true);
                     $filters = $filtersJSON['rules'];
                 }
-
-                // $filters = json_decode($params['filters']);
                 $baseQuery->where(function ($q) use ($filters) {
                     foreach ($filters as $filter) {
                         $field = $filter['field'] ?? null;
                         $data = $filter['data'] ?? null;
-
                         if ($field && $data !== null) {
                             if ($field == 'tgl_bukti') {
-                                // Untuk pencarian tgl_bukti, kita bisa gunakan format yang sesuai
                                 $q->whereRaw("DATE_FORMAT(penjualans.tgl_bukti, '%d-%m-%Y') LIKE ?", ["%$data%"]);
-                                continue; // Skip ke iterasi berikutnya karena sudah di-handle
+                                continue;
                             }
-                            // Tambahkan kondisi pencarian lain jika perlu
                             $q->where($field, 'like', "%{$data}%");
                         }
                     }
@@ -256,11 +296,9 @@ class Penjualan extends Model
             }
         }
 
-        // --- Pagination ---
-        $sidx = $params['sidx'] ?? 'penjualans.id'; // Default sort
+        $sidx = $params['sidx'] ?? 'penjualans.id';
         $sord = $params['sord'] ?? 'asc';
 
-        // Jika limitOn false, kita tidak akan menggunakan limit dan offset
         if (!$limitOn) {
             return $baseQuery
                 ->orderBy($sidx, $sord) 
@@ -272,68 +310,43 @@ class Penjualan extends Model
         $page = (int)($params['page'] ?? 1);
         $start = $params['start'] ?? (($page - 1) * $limit);
 
-        // Clone query untuk menghitung total
         $countQuery = clone $baseQuery;
         $count = $countQuery->count();
 
         $total_pages = $count > 0 ? ceil($count / $limit) : 0;
         if ($page > $total_pages) $page = $total_pages;
-        $start = max(0, ($page - 1) * $limit); // Recalculate start
+        $start = max(0, ($page - 1) * $limit);
 
-        // Untuk export data
         if (isset($params['start_range']) && isset($params['end_range'])) {
-
             $startRange = $params['start_range'];
             $endRange = $params['end_range'];
-
             if ($startRange > 0 && $endRange > 0) {
                 $offset = $startRange - 1;
                 $countToFetch = $endRange - $startRange + 1;
-
-                // offset() dulu untuk melewati, baru limit() untuk mengambil
-                // return $baseQuery->orderBy($sidx, $sord)->offset($offset)->limit($countToFetch)->get();
-                return $baseQuery // <-- Muat relasi
+                return $baseQuery
                     ->orderBy($sidx, $sord)
                     ->offset($offset)
                     ->limit($countToFetch);
-
-                // \dd($data);
             }
-
         }
 
-        // Dapatkan data dengan limit dan offset
         $data = $baseQuery->orderBy($sidx, $sord)
             ->offset($start)
             ->limit($limit)
             ->get();
 
-        // --- Hitung Total untuk setiap Penjualan ---
-        // Karena kita tidak pakai Eloquent, kita harus hitung manual
         $data->transform(function ($item) {
-            // Query untuk mendapatkan detail dan hitung total
-            // $details = DB::table('penjualan_details')
-            //     ->where('penjualan_id', $item->id)
-            //     ->get();
-
-            // $total = $details->sum(function ($detail) {
-            //     return $detail->qty * $detail->harga;
-            // });
-
-            // $item->total = $total;
-            // Format tanggal jika perlu
             $item->formatted_tgl_bukti = \Carbon\Carbon::parse($item->tgl_bukti)->format('d-m-Y');
             return $item;
         });
 
-        // Format data untuk grid (misalnya jqGrid)
         $rows = $data->map(function ($item) {
             return [
                 'id' => $item->id,
                 'cell' => [
                     $item->id,
                     $item->no_bukti,
-                    $item->formatted_tgl_bukti, // Gunakan tanggal yang diformat
+                    $item->formatted_tgl_bukti,
                     $item->nama_pelanggan,
                 ],
             ];
@@ -343,24 +356,22 @@ class Penjualan extends Model
             'page' => $page,
             'total' => $total_pages,
             'records' => $count,
-            'rows' => $rows->toArray(), // Konversi ke array
-            //'query' => $baseQuery->toSql(), // Untuk debugging, bisa dihapus nanti
-            //'bindings' => $baseQuery->getBindings(), // Untuk debugging, bisa dihapus
+            'rows' => $rows->toArray(),
         ];
     }
 
-
+    /**
+     * Calculates the page number for a given record ID.
+     *
+     * @param array $params Grid parameters for sorting and filtering.
+     * @param int $id The ID of the record to find.
+     * @return array An array containing the ID and its calculated page number.
+     */
     public static function getPenjualanPagination(array $params, $id = 0)
     {
-        // Panggil fungsi getGridMaster untuk mendapatkan data 
         $ids = self::getGridMaster($params, false);
-
-        // Cari posisi id
         $rowIndex = array_search($id, $ids);
-
-        // var_dump($rowIndex);
         $rowNumber = $rowIndex !== false ? $rowIndex + 1 : 1;
-        // $rowNumber = $rowIndex + 1;
         $limit = isset($params['limit']) ? intval($params['limit']) : 10;
         $page = ceil($rowNumber / $limit);
 
@@ -368,88 +379,77 @@ class Penjualan extends Model
             "id" => $id,
             "page" => $page,
         ];
-        
-
     }
 
+    /**
+     * Finds the ID of the nearest record after a deletion.
+     *
+     * @param array $params Grid parameters for sorting and filtering.
+     * @param int $deletedId The ID of the record that was deleted.
+     * @return int|null The ID of the next record to focus on, or null if none exists.
+     */
     public static function getIDTerdekat(array $params, $deletedId = 0)
     {
-        // Panggil fungsi getGridMaster untuk mendapatkan data 
         $ids = self::getGridMaster($params, false);
-
-        // Cari posisi ID yang dihapus
         $posisiTerhapus = array_search($deletedId, $ids);
 
-        // Jika ID tidak ditemukan
         if ($posisiTerhapus === false) {
             return !empty($ids) && $ids[0] != $deletedId ? $ids[0] : (isset($ids[1]) ? $ids[1] : null);
         }
 
-        // Hapus ID dari array dan re-index
         unset($ids[$posisiTerhapus]);
         $ids = array_values($ids);
 
-        // Cari ID terdekat
         if (isset($ids[$posisiTerhapus])) {
-            return $ids[$posisiTerhapus]; // Posisi yang sama
+            return $ids[$posisiTerhapus];
         } elseif ($posisiTerhapus > 0 && isset($ids[$posisiTerhapus - 1])) {
-            return $ids[$posisiTerhapus - 1]; // Posisi sebelumnya
+            return $ids[$posisiTerhapus - 1];
         } else {
-            return !empty($ids) ? $ids[0] : null; // Fallback ke pertama
+            return !empty($ids) ? $ids[0] : null;
         }
     }
 
+    /**
+     * Retrieves and formats data for exporting.
+     *
+     * @param array $params Parameters for filtering the data, including export range.
+     * @return \Illuminate\Support\Collection A collection of sales data with details.
+     */
     public static function getDataForExport(array $params)
     {
-        $data = (object)self::getGridMaster($params);
-        $correctPenjualanIds = $data->pluck('penjualans.id');
+        $queryBuilder = self::getGridMaster($params);
+        $correctPenjualanIds = collect($queryBuilder['rows'])->pluck('id');
 
         if ($correctPenjualanIds->isEmpty()) {
             return collect();
         }
 
-        // Ambil semua data penjualan master yang relevan
-        // $penjualanMasters = DB::table('penjualans')
-        //     ->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id')
-        //     ->whereIn('penjualans.id', $correctPenjualanIds)
-        //     ->select('penjualans.*', 'pelanggans.nama_pelanggan')
-        //     ->get();
-
         $sidx = $params['sidx_detail'] ?? 'nama_barang';
         $sord = $params['sord_detail'] ?? 'desc';
 
-        // Ambil semua data detail yang relevan dalam satu query
         $allDetails = DB::table('penjualan_details')
             ->whereIn('penjualan_id', $correctPenjualanIds)
             ->orderBy($sidx, $sord)
             ->get();
-
-        // --- LANGKAH 3: KELOMPOKKAN DETAIL BERDASARKAN ID PENJUALAN ---
         $groupedDetails = $allDetails->groupBy('penjualan_id');
 
-        // --- LANGKAH 4: GABUNGKAN DATA MASTER DENGAN DETAIL SECARA MANUAL ---
-        $data = $data->get()->map(function ($penjualan) use ($groupedDetails) {
-            // Tambahkan properti 'details' ke setiap objek penjualan
-            // Jika tidak ada detail, berikan koleksi kosong
+        $penjualanMasters = DB::table('penjualans')
+            ->join('pelanggans', 'penjualans.pelanggan_id', '=', 'pelanggans.id')
+            ->whereIn('penjualans.id', $correctPenjualanIds)
+            ->select('penjualans.*', 'pelanggans.nama_pelanggan')
+            ->get();
+
+        $data = $penjualanMasters->map(function ($penjualan) use ($groupedDetails) {
             $penjualan->details = $groupedDetails->get($penjualan->id, collect());
-
-            // Tambahkan properti 'pelanggan' agar strukturnya mirip Eloquent
             $penjualan->pelanggan = (object)['nama_pelanggan' => $penjualan->nama_pelanggan];
-
-            // Ubah string tanggal menjadi objek Carbon agar bisa di-format nanti
             $penjualan->tgl_bukti = \Carbon\Carbon::parse($penjualan->tgl_bukti);
-
             return $penjualan;
         });
 
-        // Urutkan hasil akhir sesuai dengan urutan ID yang kita dapatkan di Langkah 1
         $sortedData = $data->sortBy(function ($penjualan) use ($correctPenjualanIds) {
             return array_search($penjualan->id, $correctPenjualanIds->toArray());
         });
 
         return $sortedData;
-        // return $data;
-        // \dd($data);
     }
-
 }

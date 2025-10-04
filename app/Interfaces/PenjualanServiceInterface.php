@@ -5,47 +5,55 @@ namespace App\Interfaces;
 use App\Models\Penjualan;
 
 /**
- * Interface untuk service yang mengelola data Penjualan.
+ * Interface for the service that manages sales data.
+ *
+ * This interface defines the contract for the sales service, outlining the
+ * methods that must be implemented for handling sales-related business logic,
+ * such as creating, updating, deleting, and retrieving sales data.
+ *
+ * @package App\Interfaces
  */
 interface PenjualanServiceInterface
 {
   /**
-   * Menghasilkan nomor bukti berikutnya yang tersedia menggunakan Query Builder.
+   * Generates the next available proof number using the Query Builder.
    *
-   * @return string
+   * @return string The next unique proof number.
    */
   public function getNextNoBukti(): string;
 
   /**
-   * Membuat data penjualan baru beserta detailnya.
+   * Creates a new sales record along with its details.
    *
-   * @param array $data Data yang sudah divalidasi dari request.
-   * @return Penjualan Model Penjualan yang baru dibuat.
-   * @throws \Exception Jika terjadi kegagalan saat menyimpan ke database.
+   * @param array $data The validated data from the request.
+   * @return Penjualan The newly created Penjualan model instance.
+   * @throws \Exception If a failure occurs while saving to the database.
    */
   public function createPenjualan(array $data): Penjualan;
 
   /**
-   * Mengambil data penjualan tunggal untuk keperluan edit
-   * dan mengubahnya ke format yang dibutuhkan frontend.
+   * Retrieves a single sales record for editing purposes and formats it
+   * for the frontend.
    *
-   * @param int $id ID Penjualan yang akan diambil.
-   * @return array Data penjualan yang sudah diformat.
+   * @param int $id The ID of the sale to retrieve.
+   * @return array The formatted sales data.
    */
   public function getPenjualanForEdit(int $id): array;
 
   /**
-   * Memperbarui data penjualan yang ada beserta detailnya.
-   * @param int $id ID Penjualan yang akan diupdate.
-   * @param array $data Data baru yang sudah divalidasi.
-   * @return Penjualan Model Penjualan yang telah diupdate.
+   * Updates an existing sales record and its details.
+   *
+   * @param int $id The ID of the sale to update.
+   * @param array $data The new, validated data.
+   * @return Penjualan The updated Penjualan model instance.
   */
   public function updatePenjualan(int $id, array $data): Penjualan;
 
   /**
-   * Menghapus data penjualan beserta detailnya.
-   * @param int $id ID Penjualan yang akan dihapus.
-   * @return bool True jika berhasil, false jika gagal.
+   * Deletes a sales record and its associated details.
+   *
+   * @param int $id The ID of the sale to delete.
+   * @return bool True on success, false on failure.
    */
   public function deletePenjualan(int $id): bool;
 }

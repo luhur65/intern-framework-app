@@ -6,31 +6,69 @@ use Illuminate\Support\Facades\DB; // Import DB facade untuk Query Builder
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Class PenjualanDetail
+ *
+ * Represents the 'penjualan_details' table. This model stores the individual
+ * line items for each sales transaction.
+ *
+ * @package App\Models
+ * @property int $id
+ * @property int $penjualan_id
+ * @property string $nama_barang
+ * @property int $qty
+ * @property float $harga
+ * @property-read \App\Models\Penjualan $penjualan
+ * @property-read float $total
+ */
 class PenjualanDetail extends Model
 {
     /** @use HasFactory<\Database\Factories\PenjualanDetailFactory> */
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = ['penjualan_id', 'nama_barang', 'qty', 'harga'];
-    // protected $primaryKey = 'id_detail';
+
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
     public $timestamps = false;
 
+    /**
+     * Get the parent sale that this detail belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function penjualan()
     {
         return $this->belongsTo(Penjualan::class, 'penjualan_id');
     }
 
+    /**
+     * Accessor for the total price of the line item.
+     *
+     * @return float The result of quantity multiplied by price.
+     */
     public function getTotalAttribute()
     {
         return $this->qty * $this->harga;
     }
     
     /**
-     * Static a query to get grid data.
+     * Fetches, filters, and paginates data for the detail jqGrid.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param array $params
-     * @return \Illuminate\Database\Eloquent\Builder
+     * This static method builds a query using the Query Builder to get the
+     * line items for a specific sale, applying any sorting, filtering, and
+     * pagination parameters provided.
+     *
+     * @param array $params An array of parameters for the grid, including 'penjualan_id'.
+     * @return array An array formatted for consumption by a jqGrid.
      */
     public static function getGridDetail(array $params)
     {
@@ -74,17 +112,7 @@ class PenjualanDetail extends Model
                         $data = $filter['data'] ?? null;
 
                         if ($field && $data !== null) {
-                            // if ($field == 'tgl_bukti') {
-                            //     // Untuk pencarian tgl_bukti, kita bisa gunakan format yang sesuai
-                            //     $q->whereRaw("DATE_FORMAT(penjualans.tgl_bukti, '%d-%m-%Y') LIKE ?", ["%$data%"]);
-                            //     continue; // Skip ke iterasi berikutnya karena sudah di-handle
-                            // }
-                            // pencarian berdasarkan field dan data
                             if ($field == 'total') {
-                                // Filter langsung ke ekspresi qty * harga
-                                // $q->whereRaw('(qty * harga) LIKE ?', ["%$data%"]);
-                                // $q->whereRaw("FORMAT(qty * harga, 2, 'id_ID') LIKE ?", ["%$data%"]);
-                                // $q->whereRaw("REPLACE(FORMAT(qty * harga, 2), ',', '') LIKE ?", ["%" . str_replace(',', '', $data) . "%"]);
                                 $q->whereRaw("FORMAT(qty * harga, 2) LIKE ?", ["%$data%"]);
 
                             } elseif ($field == 'harga') {
@@ -131,11 +159,10 @@ class PenjualanDetail extends Model
             return [
                 'id' => $detail->id,
                 'cell' => [
-                    // $detail->id_detail,
                     $detail->nama_barang,
                     $detail->qty,
                     $detail->harga, 
-                    $detail->total, // Total dihitung dari qty * harga
+                    $detail->total,
                 ],
             ];
         });

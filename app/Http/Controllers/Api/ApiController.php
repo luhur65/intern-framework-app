@@ -9,8 +9,24 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 
+/**
+ * Class ApiController
+ *
+ * Handles API requests for the application.
+ * @package App\Http\Controllers\Api
+ */
 class ApiController extends Controller
 {
+    /**
+     * Handles the request to retrieve sales data for a jqGrid.
+     *
+     * This method retrieves and filters sales data based on the parameters
+     * provided in the request, such as pagination, sorting, and searching.
+     * The response is formatted to be compatible with the jqGrid plugin.
+     *
+     * @param Request $request The HTTP request object, containing query parameters.
+     * @return JsonResponse A JSON response containing the formatted sales data for the jqGrid.
+     */
     public function index(Request $request): JsonResponse
     {
         // parameter default untuk jqgrid
