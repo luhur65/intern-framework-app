@@ -1,0 +1,42 @@
+# version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+      # - "80:80"      # HTTP
+      # - "443:443"    # HTTPS
+      # - "443:443/udp" # HTTP/3
+    volumes:
+      - .:/app       # Mount kode untuk development (hilangkan untuk production)
+    environment:
+      - APP_ENV=local
+      - DB_CONNECTION=sqlsrv
+      - DB_HOST=192.168.3.39  # Ganti dengan IP/hostname SQL Server
+      - DB_PORT=1433
+      - DB_DATABASE=laravelsqlsrv
+      - DB_USERNAME=sa
+      - DB_PASSWORD="Aa123456"
+      - REDIS_HOST=redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  redis_data:

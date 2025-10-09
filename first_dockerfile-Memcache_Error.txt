@@ -1,0 +1,120 @@
+# Gunakan base image FrankenPHP dengan PHP 8.3 (Debian bookworm untuk stabilitas)
+FROM dunglas/frankenphp:1-php8.3-bookworm
+
+# Install dependensi dasar untuk unixodbc dan Microsoft ODBC Driver
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg2 \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    unixodbc \
+    unixodbc-dev \
+    libgssapi-krb5-2 \
+    zlib1g-dev \
+    libmemcached-dev \
+    libmemcached11 \
+    libmemcachedutil2 \
+    libsasl2-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Periksa versi Debian untuk memastikan kompatibilitas (9, 10, 11, 12)
+RUN /bin/bash -c 'if ! [[ "9 10 11 12" == *"$(grep VERSION_ID /etc/os-release | cut -d "\"" -f 2 | cut -d "." -f 1)"* ]]; then \
+        echo "Debian $(grep VERSION_ID /etc/os-release | cut -d "\"" -f 2 | cut -d "." -f 1) is not currently supported."; \
+        exit 1; \
+    fi'
+
+# Download dan install Microsoft repository package untuk Debian
+RUN curl -sSL -O https://packages.microsoft.com/config/debian/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2 | cut -d '.' -f 1)/packages-microsoft-prod.deb \
+    && dpkg -i packages-microsoft-prod.deb \
+    && rm packages-microsoft-prod.deb \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 mssql-tools18 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Tambahkan path mssql-tools18 ke lingkungan (untuk sqlcmd/bcp)
+ENV PATH="$PATH:/opt/mssql-tools18/bin"
+
+# Install ekstensi PHP standar via install-php-extensions
+RUN install-php-extensions \
+    apcu \
+    bcmath \
+    brotli \
+    curl \
+    dba \
+    dom \
+    exif \
+    fileinfo \
+    gd \
+    iconv \
+    intl \
+    mbstring \
+    mysqli \
+    mysqlnd \
+    opcache \
+    openssl \
+    pcntl \
+    pdo \
+    pdo_mysql \
+    pdo_pgsql \
+    pdo_sqlite \
+    pdo_sqlsrv \
+    pgsql \
+    posix \
+    readline \
+    redis \
+    sockets \
+    sodium \
+    sqlsrv \
+    sqlite3 \
+    tokenizer \
+    xml \
+    xmlreader \
+    xmlwriter \
+    zip \
+    zlib \
+    zstd
+
+# Install ekstensi PECL manual (memcache, xlswriter, sqlsrv, pdo_sqlsrv)
+# Memcached dipisah untuk debugging
+RUN pecl install memcache xlswriter sqlsrv pdo_sqlsrv \
+    && docker-php-ext-enable memcache xlswriter sqlsrv pdo_sqlsrv
+
+# Debug libmemcached availability
+RUN ls -la /usr/include/libmemcached /usr/lib/libmemcached*
+
+# Install memcached extension dengan versi spesifik dan libmemcached-dir
+RUN pecl install memcached-3.2.0 --with-libmemcached-dir=/usr \
+    && docker-php-ext-enable memcached
+
+# Install ekstensi PECL manual (memcache, memcached, xlswriter, sqlsrv, pdo_sqlsrv)
+# RUN pecl install memcache memcached xlswriter sqlsrv-5.12.0 pdo_sqlsrv-5.12.0 \
+    # # && docker-php-ext-enable memcache memcached xlswriter sqlsrv-5.12.0 pdo_sqlsrv-5.12.0
+
+# Install ekstensi PECL manual (memcache, memcached, xlswriter, sqlsrv, pdo_sqlsrv)
+# RUN pecl install memcache memcached xlswriter sqlsrv pdo_sqlsrv \
+#     && docker-php-ext-enable memcache memcached xlswriter sqlsrv pdo_sqlsrv
+# Install ekstensi PECL manual (memcache, memcached, xlswriter, sqlsrv, pdo_sqlsrv)
+# Pisahkan memcached untuk menentukan libmemcached-dir
+# RUN pecl install memcache xlswriter sqlsrv pdo_sqlsrv \
+#     && pecl install memcached --with-libmemcached-dir=/usr \
+#     && docker-php-ext-enable memcache memcached xlswriter sqlsrv pdo_sqlsrv
+
+# Copy kode Laravel ke /app (untuk production; gunakan volume untuk dev)
+WORKDIR /app
+COPY . .
+
+# Install Composer dependencies (untuk production: --no-dev; untuk dev: hilangkan)
+RUN composer install --no-dev --optimize-autoloader
+# RUN composer require laravel/octane
+
+# Generate key dan optimize (opsional, bisa di-run manual)
+RUN php artisan key:generate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache
+
+# Expose ports untuk HTTP, HTTPS, dan HTTP/3
+EXPOSE 80 443 443/udp
+
+# Jalankan FrankenPHP worker untuk Laravel (gunakan ./public/index.php untuk standard; ganti ke octane:start jika pakai Octane)
+# ENV FRANKENPHP_CONFIG="frankenphp php-server -r /public --listen :3000 --workers 4 --max-requests 1000 --max-requests-graceful 100 --idle-timeout 60"
+CMD ["frankenphp", "php-serve", "-r", "/public", "--listen", ":3000", "--workers", "4", "--max-requests", "1000", "--max-requests-graceful", "100", "--idle-timeout", "60"]
